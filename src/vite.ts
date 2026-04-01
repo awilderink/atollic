@@ -659,7 +659,7 @@ console.log(\`Listening on http://localhost:\${port}\`);
 						body = ensureDoctype(body);
 					}
 
-					if (ct.includes("text/html") && isDoc) {
+					if (ct.includes("text/html")) {
 						if (!cachedCssUrls) {
 							cachedCssUrls = collectCssUrls(server, resolvedEntry);
 						}
