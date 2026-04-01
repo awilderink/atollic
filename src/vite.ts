@@ -323,11 +323,12 @@ export function atollic(options: AtollicOptions): Plugin[] {
 					},
 				},
 				ssr: {
-					noExternal: true,
+					noExternal: ["atollic"],
 				},
 			};
 
 			if (env.command === "build") {
+				base.ssr = { noExternal: true };
 				base.builder = {};
 				base.build = {
 					manifest: true,
