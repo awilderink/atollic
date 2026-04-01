@@ -322,9 +322,6 @@ export function atollic(options: AtollicOptions): Plugin[] {
 						),
 					},
 				},
-				ssr: {
-					noExternal: ["atollic"],
-				},
 			};
 
 			if (env.command === "build") {
