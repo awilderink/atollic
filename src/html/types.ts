@@ -1,6 +1,7 @@
 export type Children =
 	| string
 	| number
+	| bigint
 	| boolean
 	| null
 	| undefined
@@ -744,6 +745,10 @@ declare global {
 			children: {};
 		}
 
-		type IntrinsicAttributes = {};
+		interface IntrinsicAttributes {}
+
+		type Component<T = {}> = (
+			props: T & { children?: Children },
+		) => Element;
 	}
 }
