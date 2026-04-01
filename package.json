@@ -6,6 +6,7 @@
 		"dev:elysia": "bunx --bun vite --config examples/elysia/vite.config.ts",
 		"dev:hono": "bunx --bun vite --config examples/hono/vite.config.ts",
 		"build": "vite build && tsc",
+		"prepare": "npm run build",
 		"prepublishOnly": "npm run build",
 		"typecheck": "tsc --noEmit && tsc --noEmit --project examples/elysia/tsconfig.json && tsc --noEmit --project examples/hono/tsconfig.json",
 		"format": "biome format --write .",
