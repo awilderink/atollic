@@ -261,6 +261,7 @@ export function atollic(options: AtollicOptions): Plugin[] {
 	const clientScripts = new Set<string>();
 	const cssImports = new Set<string>();
 	let resolvedEntry = "";
+	let serverPort = 3000;
 	let devServer: ViteDevServer | null = null;
 	let prodAssets = "";
 	let islandsScanned = false;
@@ -399,6 +400,7 @@ export function atollic(options: AtollicOptions): Plugin[] {
 		async configResolved(config) {
 			root = config.root;
 			resolvedEntry = resolve(root, options.entry);
+			serverPort = config.server.port ?? 3000;
 		},
 
 		// -- Build: eager island discovery --------------------------------------
@@ -517,7 +519,7 @@ setProductionAssets(${JSON.stringify(prodAssets)});
 import handler from "${resolvedEntry}";
 
 const clientDir = resolve(import.meta.dirname, "..", "client");
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || ${serverPort};
 
 Bun.serve({
   port,
