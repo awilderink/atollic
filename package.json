@@ -1,0 +1,106 @@
+{
+	"name": "atollic",
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"dev:elysia": "bunx --bun vite --config examples/elysia/vite.config.ts",
+		"dev:hono": "bunx --bun vite --config examples/hono/vite.config.ts",
+		"build": "vite build && tsc",
+		"prepublishOnly": "npm run build",
+		"typecheck": "tsc --noEmit && tsc --noEmit --project examples/elysia/tsconfig.json && tsc --noEmit --project examples/hono/tsconfig.json",
+		"format": "biome format --write .",
+		"lint": "biome lint .",
+		"check": "biome check --write ."
+	},
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./vite": {
+			"types": "./dist/vite.d.ts",
+			"import": "./dist/vite.js"
+		},
+		"./client": {
+			"types": "./dist/client.d.ts",
+			"import": "./dist/client.js"
+		},
+		"./adapter": {
+			"types": "./dist/adapter.d.ts",
+			"import": "./dist/adapter.js"
+		},
+		"./head": {
+			"types": "./dist/head.d.ts",
+			"import": "./dist/head.js"
+		},
+		"./solid": {
+			"types": "./dist/adapters/solid.d.ts",
+			"import": "./dist/adapters/solid.js"
+		},
+		"./elysia": {
+			"types": "./dist/servers/elysia.d.ts",
+			"import": "./dist/servers/elysia.js"
+		},
+		"./hono": {
+			"types": "./dist/servers/hono.d.ts",
+			"import": "./dist/servers/hono.js"
+		},
+		"./jsx-runtime": {
+			"types": "./dist/html/jsx-runtime.d.ts",
+			"import": "./dist/html/jsx-runtime.js"
+		},
+		"./jsx-dev-runtime": {
+			"types": "./dist/html/jsx-dev-runtime.d.ts",
+			"import": "./dist/html/jsx-dev-runtime.js"
+		},
+		"./html": {
+			"types": "./dist/html/index.d.ts",
+			"import": "./dist/html/index.js"
+		}
+	},
+	"files": [
+		"dist/*.js",
+		"dist/*.d.ts",
+		"dist/adapters/*.js",
+		"dist/adapters/*.d.ts",
+		"dist/servers/*.js",
+		"dist/servers/*.d.ts",
+		"dist/html/*.js",
+		"dist/html/*.d.ts"
+	],
+	"dependencies": {
+		"idiomorph": "^0.7.4"
+	},
+	"peerDependencies": {
+		"elysia": "^1.4.27",
+		"hono": "^4.0.0",
+		"solid-js": "^1.9.11",
+		"vite": "^8.0.0",
+		"vite-plugin-solid": "^2.11.11"
+	},
+	"peerDependenciesMeta": {
+		"elysia": {
+			"optional": true
+		},
+		"hono": {
+			"optional": true
+		},
+		"solid-js": {
+			"optional": true
+		},
+		"vite-plugin-solid": {
+			"optional": true
+		}
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.4.7",
+		"@types/node": "^25.5.0",
+		"bun-types": "^1.3.11",
+		"elysia": "^1.4.28",
+		"hono": "^4.12.9",
+		"solid-js": "^1.9.11",
+		"typescript": "^5.9.3",
+		"vite": "^8.0.3",
+		"vite-plugin-solid": "^2.11.11"
+	}
+}

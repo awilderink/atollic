@@ -1,0 +1,23 @@
+{
+	"compilerOptions": {
+		"target": "ESNext",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"jsx": "react-jsx",
+		"jsxImportSource": "atollic",
+		"strict": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"outDir": "dist",
+		"declaration": true,
+		"emitDeclarationOnly": true,
+		"types": ["node", "vite/client"],
+		"paths": {
+			"atollic": ["./src/index.ts"],
+			"atollic/*": ["./src/*"],
+			"atollic/jsx-runtime": ["./src/html/jsx-runtime.ts"],
+			"atollic/jsx-dev-runtime": ["./src/html/jsx-dev-runtime.ts"]
+		}
+	},
+	"include": ["src/**/*"]
+}
