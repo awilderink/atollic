@@ -322,7 +322,7 @@ export function atollic(options: AtollicOptions): Plugin[] {
 					},
 				},
 				ssr: {
-					noExternal: ["atollic"],
+					noExternal: true,
 				},
 			};
 
