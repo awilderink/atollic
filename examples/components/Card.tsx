@@ -1,10 +1,11 @@
 /** @jsxImportSource solid-js */
 "use client";
 
-import { createSignal, type ParentComponent } from "solid-js";
+import { createSignal } from "solid-js";
 
 /** Island that accepts children from the server — tests the server→client children boundary. */
-export const Card: ParentComponent<{ title: string }> = (props) => {
+// biome-ignore lint/suspicious/noExplicitAny: island boundary — children cross the SSR/hydration boundary as serialized HTML
+export const Card = (props: { title: string; children?: any }) => {
 	const [liked, setLiked] = createSignal(false);
 
 	return (

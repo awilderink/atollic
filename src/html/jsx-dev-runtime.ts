@@ -1,6 +1,5 @@
 import { Fragment, jsx, jsxs } from "./jsx-runtime.js";
 
-export type { JSX } from "./types.js";
 export { Fragment, jsx, jsxs };
 
 export function jsxDEV(

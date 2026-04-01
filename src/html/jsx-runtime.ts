@@ -114,4 +114,5 @@ export function Fragment(props: {
 	return renderChildren(props.children);
 }
 
-export type { JSX } from "./types.js";
+// Ensure global JSX declarations from types.ts are loaded
+import type {} from "./types.js";

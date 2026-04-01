@@ -11,6 +11,6 @@
  * </head>
  * ```
  */
-export function Head(_props?: {}): string {
+export function Head(_props?: {}): JSX.Element {
 	return <meta name="atollic-head" />;
 }

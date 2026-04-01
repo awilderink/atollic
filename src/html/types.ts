@@ -4,634 +4,746 @@ export type Children =
 	| boolean
 	| null
 	| undefined
+	| Promise<Children>
 	| Children[];
 
 export type Component<T = {}> = (
 	props: T & { children?: Children },
 ) => string | Promise<string>;
 
-// ---------------------------------------------------------------------------
-// HTML attribute types
-// ---------------------------------------------------------------------------
+// All WAI-ARIA 1.1 role attribute values from https://www.w3.org/TR/wai-aria-1.1/#role_definitions
+type AriaRole =
+	| "alert"
+	| "alertdialog"
+	| "application"
+	| "article"
+	| "banner"
+	| "button"
+	| "cell"
+	| "checkbox"
+	| "columnheader"
+	| "combobox"
+	| "complementary"
+	| "contentinfo"
+	| "definition"
+	| "dialog"
+	| "directory"
+	| "document"
+	| "feed"
+	| "figure"
+	| "form"
+	| "grid"
+	| "gridcell"
+	| "group"
+	| "heading"
+	| "img"
+	| "link"
+	| "list"
+	| "listbox"
+	| "listitem"
+	| "log"
+	| "main"
+	| "marquee"
+	| "math"
+	| "menu"
+	| "menubar"
+	| "menuitem"
+	| "menuitemcheckbox"
+	| "menuitemradio"
+	| "navigation"
+	| "none"
+	| "note"
+	| "option"
+	| "presentation"
+	| "progressbar"
+	| "radio"
+	| "radiogroup"
+	| "region"
+	| "row"
+	| "rowgroup"
+	| "rowheader"
+	| "scrollbar"
+	| "search"
+	| "searchbox"
+	| "separator"
+	| "slider"
+	| "spinbutton"
+	| "status"
+	| "switch"
+	| "tab"
+	| "table"
+	| "tablist"
+	| "tabpanel"
+	| "term"
+	| "textbox"
+	| "timer"
+	| "toolbar"
+	| "tooltip"
+	| "tree"
+	| "treegrid"
+	| "treeitem"
+	| (string & {});
 
-export interface HtmlGlobalAttributes {
-	accesskey?: string;
-	autocapitalize?: string;
-	autofocus?: boolean;
-	class?: string;
-	contenteditable?: "" | "true" | "false" | "plaintext-only" | boolean;
-	dir?: "ltr" | "rtl" | "auto";
-	draggable?: "true" | "false" | boolean;
-	enterkeyhint?:
-		| "enter"
-		| "done"
-		| "go"
-		| "next"
-		| "previous"
-		| "search"
-		| "send";
-	hidden?: "" | "hidden" | "until-found" | boolean;
-	id?: string;
-	inert?: boolean;
-	inputmode?:
-		| "none"
-		| "text"
-		| "tel"
-		| "url"
-		| "email"
-		| "numeric"
-		| "decimal"
-		| "search";
-	is?: string;
-	itemid?: string;
-	itemprop?: string;
-	itemref?: string;
-	itemscope?: boolean;
-	itemtype?: string;
-	lang?: string;
-	nonce?: string;
-	part?: string;
-	popover?: "" | "auto" | "manual";
-	role?: string;
-	slot?: string;
-	spellcheck?: "true" | "false" | boolean;
-	style?: string;
-	tabindex?: number | string;
-	title?: string;
-	translate?: "yes" | "no";
+declare global {
+	namespace JSX {
+		type Element = string | Promise<string>;
+		type ElementType = string | ((props: any) => any);
 
-	// data-* and aria-*
-	[attr: `data-${string}`]: string | number | boolean | undefined;
-	[attr: `aria-${string}`]: string | number | boolean | undefined;
+		// -------------------------------------------------------------------
+		// Base HTML attributes (global attributes shared by all elements)
+		// -------------------------------------------------------------------
 
-	// Event handlers (as strings for server-rendered HTML)
-	[attr: `on${string}`]: string | undefined;
+		interface HtmlTag {
+			accesskey?: string;
+			autocapitalize?: string;
+			autofocus?: boolean;
+			class?: string;
+			contenteditable?: "" | "true" | "false" | "plaintext-only" | boolean;
+			dir?: "ltr" | "rtl" | "auto";
+			draggable?: "true" | "false" | boolean;
+			enterkeyhint?:
+				| "enter"
+				| "done"
+				| "go"
+				| "next"
+				| "previous"
+				| "search"
+				| "send";
+			hidden?: "" | "hidden" | "until-found" | boolean;
+			id?: string;
+			inert?: boolean;
+			inputmode?:
+				| "none"
+				| "text"
+				| "tel"
+				| "url"
+				| "email"
+				| "numeric"
+				| "decimal"
+				| "search";
+			is?: string;
+			itemid?: string;
+			itemprop?: string;
+			itemref?: string;
+			itemscope?: boolean;
+			itemtype?: string;
+			lang?: string;
+			nonce?: string;
+			part?: string;
+			popover?: "" | "auto" | "manual";
+			role?: AriaRole;
+			slot?: string;
+			spellcheck?: "true" | "false" | boolean;
+			style?: string;
+			tabindex?: number | string;
+			title?: string;
+			translate?: "yes" | "no";
 
-	// innerHTML support
-	innerHTML?: string;
-	dangerouslySetInnerHTML?: { __html: string };
+			// data-* and aria-*
+			[attr: `data-${string}`]: string | number | boolean | undefined;
+			[attr: `aria-${string}`]: string | number | boolean | undefined;
 
-	children?: Children;
-}
+			// Event handlers (as strings for server-rendered HTML)
+			[attr: `on${string}`]: string | undefined;
 
-// ---------------------------------------------------------------------------
-// Element-specific attributes
-// ---------------------------------------------------------------------------
+			// innerHTML support
+			innerHTML?: string;
+			dangerouslySetInnerHTML?: { __html: string };
 
-export interface HtmlAnchorAttributes extends HtmlGlobalAttributes {
-	download?: string | boolean;
-	href?: string;
-	hreflang?: string;
-	ping?: string;
-	referrerpolicy?: string;
-	rel?: string;
-	target?: "_self" | "_blank" | "_parent" | "_top" | (string & {});
-	type?: string;
-}
+			children?: Children;
+		}
 
-export interface HtmlAreaAttributes extends HtmlGlobalAttributes {
-	alt?: string;
-	coords?: string;
-	download?: string | boolean;
-	href?: string;
-	hreflang?: string;
-	ping?: string;
-	referrerpolicy?: string;
-	rel?: string;
-	shape?: "rect" | "circle" | "poly" | "default";
-	target?: string;
-}
+		// -------------------------------------------------------------------
+		// Element-specific attributes
+		// -------------------------------------------------------------------
 
-export interface HtmlAudioAttributes extends HtmlMediaAttributes {}
+		interface HtmlAnchorTag extends HtmlTag {
+			download?: string | boolean;
+			href?: string;
+			hreflang?: string;
+			ping?: string;
+			referrerpolicy?: string;
+			rel?: string;
+			target?: "_self" | "_blank" | "_parent" | "_top" | (string & {});
+			type?: string;
+		}
 
-export interface HtmlBaseAttributes extends HtmlGlobalAttributes {
-	href?: string;
-	target?: string;
-}
+		interface HtmlAreaTag extends HtmlTag {
+			alt?: string;
+			coords?: string;
+			download?: string | boolean;
+			href?: string;
+			hreflang?: string;
+			ping?: string;
+			referrerpolicy?: string;
+			rel?: string;
+			shape?: "rect" | "circle" | "poly" | "default";
+			target?: string;
+		}
 
-export interface HtmlBlockquoteAttributes extends HtmlGlobalAttributes {
-	cite?: string;
-}
+		interface HtmlMediaTag extends HtmlTag {
+			autoplay?: boolean;
+			controls?: boolean;
+			crossorigin?: "" | "anonymous" | "use-credentials";
+			loop?: boolean;
+			muted?: boolean;
+			preload?: "none" | "metadata" | "auto" | "";
+			src?: string;
+		}
 
-export interface HtmlButtonAttributes extends HtmlGlobalAttributes {
-	disabled?: boolean;
-	form?: string;
-	formaction?: string;
-	formenctype?: string;
-	formmethod?: string;
-	formnovalidate?: boolean;
-	formtarget?: string;
-	name?: string;
-	popovertarget?: string;
-	popovertargetaction?: "hide" | "show" | "toggle";
-	type?: "submit" | "reset" | "button";
-	value?: string;
-}
+		interface HtmlAudioTag extends HtmlMediaTag {}
 
-export interface HtmlCanvasAttributes extends HtmlGlobalAttributes {
-	height?: number | string;
-	width?: number | string;
-}
+		interface HtmlBaseTag extends HtmlTag {
+			href?: string;
+			target?: string;
+		}
 
-export interface HtmlColAttributes extends HtmlGlobalAttributes {
-	span?: number | string;
-}
+		interface HtmlQuoteTag extends HtmlTag {
+			cite?: string;
+		}
 
-export interface HtmlColgroupAttributes extends HtmlGlobalAttributes {
-	span?: number | string;
-}
+		interface HtmlButtonTag extends HtmlTag {
+			disabled?: boolean;
+			form?: string;
+			formaction?: string;
+			formenctype?: string;
+			formmethod?: string;
+			formnovalidate?: boolean;
+			formtarget?: string;
+			name?: string;
+			popovertarget?: string;
+			popovertargetaction?: "hide" | "show" | "toggle";
+			type?: "submit" | "reset" | "button";
+			value?: string;
+		}
 
-export interface HtmlDataAttributes extends HtmlGlobalAttributes {
-	value?: string;
-}
+		interface HtmlCanvasTag extends HtmlTag {
+			height?: number | string;
+			width?: number | string;
+		}
 
-export interface HtmlDelAttributes extends HtmlGlobalAttributes {
-	cite?: string;
-	datetime?: string;
-}
+		interface HtmlTableColTag extends HtmlTag {
+			span?: number | string;
+		}
 
-export interface HtmlDetailsAttributes extends HtmlGlobalAttributes {
-	name?: string;
-	open?: boolean;
-}
+		interface HtmlDataTag extends HtmlTag {
+			value?: string;
+		}
 
-export interface HtmlDialogAttributes extends HtmlGlobalAttributes {
-	open?: boolean;
-}
+		interface HtmlModTag extends HtmlTag {
+			cite?: string;
+			datetime?: string;
+		}
 
-export interface HtmlEmbedAttributes extends HtmlGlobalAttributes {
-	height?: number | string;
-	src?: string;
-	type?: string;
-	width?: number | string;
-}
+		interface HtmlDetailsTag extends HtmlTag {
+			name?: string;
+			open?: boolean;
+		}
 
-export interface HtmlFieldsetAttributes extends HtmlGlobalAttributes {
-	disabled?: boolean;
-	form?: string;
-	name?: string;
-}
+		interface HtmlDialogTag extends HtmlTag {
+			open?: boolean;
+		}
 
-export interface HtmlFormAttributes extends HtmlGlobalAttributes {
-	"accept-charset"?: string;
-	action?: string;
-	autocomplete?: "on" | "off" | (string & {});
-	enctype?:
-		| "application/x-www-form-urlencoded"
-		| "multipart/form-data"
-		| "text/plain";
-	method?: "get" | "post" | "dialog";
-	name?: string;
-	novalidate?: boolean;
-	rel?: string;
-	target?: string;
-}
+		interface HtmlEmbedTag extends HtmlTag {
+			height?: number | string;
+			src?: string;
+			type?: string;
+			width?: number | string;
+		}
 
-export interface HtmlHtmlAttributes extends HtmlGlobalAttributes {
-	xmlns?: string;
-}
+		interface HtmlFieldSetTag extends HtmlTag {
+			disabled?: boolean;
+			form?: string;
+			name?: string;
+		}
 
-export interface HtmlIframeAttributes extends HtmlGlobalAttributes {
-	allow?: string;
-	allowfullscreen?: boolean;
-	height?: number | string;
-	loading?: "eager" | "lazy";
-	name?: string;
-	referrerpolicy?: string;
-	sandbox?: string;
-	src?: string;
-	srcdoc?: string;
-	width?: number | string;
-}
+		interface HtmlFormTag extends HtmlTag {
+			"accept-charset"?: string;
+			action?: string;
+			autocomplete?: "on" | "off" | (string & {});
+			enctype?:
+				| "application/x-www-form-urlencoded"
+				| "multipart/form-data"
+				| "text/plain";
+			method?: "get" | "post" | "dialog";
+			name?: string;
+			novalidate?: boolean;
+			rel?: string;
+			target?: string;
+		}
 
-export interface HtmlImgAttributes extends HtmlGlobalAttributes {
-	alt?: string;
-	crossorigin?: "" | "anonymous" | "use-credentials";
-	decoding?: "sync" | "async" | "auto";
-	fetchpriority?: "high" | "low" | "auto";
-	height?: number | string;
-	ismap?: boolean;
-	loading?: "eager" | "lazy";
-	referrerpolicy?: string;
-	sizes?: string;
-	src?: string;
-	srcset?: string;
-	usemap?: string;
-	width?: number | string;
-}
+		interface HtmlHtmlTag extends HtmlTag {
+			xmlns?: string;
+		}
 
-export interface HtmlInputAttributes extends HtmlGlobalAttributes {
-	accept?: string;
-	alt?: string;
-	autocomplete?: string;
-	capture?: "user" | "environment" | boolean;
-	checked?: boolean;
-	dirname?: string;
-	disabled?: boolean;
-	form?: string;
-	formaction?: string;
-	formenctype?: string;
-	formmethod?: string;
-	formnovalidate?: boolean;
-	formtarget?: string;
-	height?: number | string;
-	list?: string;
-	max?: number | string;
-	maxlength?: number | string;
-	min?: number | string;
-	minlength?: number | string;
-	multiple?: boolean;
-	name?: string;
-	pattern?: string;
-	placeholder?: string;
-	readonly?: boolean;
-	required?: boolean;
-	size?: number | string;
-	src?: string;
-	step?: number | string;
-	type?:
-		| "button"
-		| "checkbox"
-		| "color"
-		| "date"
-		| "datetime-local"
-		| "email"
-		| "file"
-		| "hidden"
-		| "image"
-		| "month"
-		| "number"
-		| "password"
-		| "radio"
-		| "range"
-		| "reset"
-		| "search"
-		| "submit"
-		| "tel"
-		| "text"
-		| "time"
-		| "url"
-		| "week"
-		| (string & {});
-	value?: string | number;
-	width?: number | string;
-}
+		interface HtmlIFrameTag extends HtmlTag {
+			allow?: string;
+			allowfullscreen?: boolean;
+			height?: number | string;
+			loading?: "eager" | "lazy";
+			name?: string;
+			referrerpolicy?: string;
+			sandbox?: string;
+			src?: string;
+			srcdoc?: string;
+			width?: number | string;
+		}
 
-export interface HtmlInsAttributes extends HtmlGlobalAttributes {
-	cite?: string;
-	datetime?: string;
-}
+		interface HtmlImageTag extends HtmlTag {
+			alt?: string;
+			crossorigin?: "" | "anonymous" | "use-credentials";
+			decoding?: "sync" | "async" | "auto";
+			fetchpriority?: "high" | "low" | "auto";
+			height?: number | string;
+			ismap?: boolean;
+			loading?: "eager" | "lazy";
+			referrerpolicy?: string;
+			sizes?: string;
+			src?: string;
+			srcset?: string;
+			usemap?: string;
+			width?: number | string;
+		}
 
-export interface HtmlLabelAttributes extends HtmlGlobalAttributes {
-	for?: string;
-	htmlFor?: string;
-}
+		interface HtmlInputTag extends HtmlTag {
+			accept?: string;
+			alt?: string;
+			autocomplete?: string;
+			capture?: "user" | "environment" | boolean;
+			checked?: boolean;
+			dirname?: string;
+			disabled?: boolean;
+			form?: string;
+			formaction?: string;
+			formenctype?: string;
+			formmethod?: string;
+			formnovalidate?: boolean;
+			formtarget?: string;
+			height?: number | string;
+			list?: string;
+			max?: number | string;
+			maxlength?: number | string;
+			min?: number | string;
+			minlength?: number | string;
+			multiple?: boolean;
+			name?: string;
+			pattern?: string;
+			placeholder?: string;
+			readonly?: boolean;
+			required?: boolean;
+			size?: number | string;
+			src?: string;
+			step?: number | string;
+			type?:
+				| "button"
+				| "checkbox"
+				| "color"
+				| "date"
+				| "datetime-local"
+				| "email"
+				| "file"
+				| "hidden"
+				| "image"
+				| "month"
+				| "number"
+				| "password"
+				| "radio"
+				| "range"
+				| "reset"
+				| "search"
+				| "submit"
+				| "tel"
+				| "text"
+				| "time"
+				| "url"
+				| "week"
+				| (string & {});
+			value?: string | number;
+			width?: number | string;
+		}
 
-export interface HtmlLiAttributes extends HtmlGlobalAttributes {
-	value?: number | string;
-}
+		interface HtmlLabelTag extends HtmlTag {
+			for?: string;
+			htmlFor?: string;
+		}
 
-export interface HtmlLinkAttributes extends HtmlGlobalAttributes {
-	as?: string;
-	crossorigin?: "" | "anonymous" | "use-credentials";
-	disabled?: boolean;
-	fetchpriority?: "high" | "low" | "auto";
-	href?: string;
-	hreflang?: string;
-	imagesizes?: string;
-	imagesrcset?: string;
-	integrity?: string;
-	media?: string;
-	referrerpolicy?: string;
-	rel?: string;
-	sizes?: string;
-	type?: string;
-}
+		interface HtmlLITag extends HtmlTag {
+			value?: number | string;
+		}
 
-export interface HtmlMapAttributes extends HtmlGlobalAttributes {
-	name?: string;
-}
+		interface HtmlLinkTag extends HtmlTag {
+			as?: string;
+			crossorigin?: "" | "anonymous" | "use-credentials";
+			disabled?: boolean;
+			fetchpriority?: "high" | "low" | "auto";
+			href?: string;
+			hreflang?: string;
+			imagesizes?: string;
+			imagesrcset?: string;
+			integrity?: string;
+			media?: string;
+			referrerpolicy?: string;
+			rel?: string;
+			sizes?: string;
+			type?: string;
+		}
 
-export interface HtmlMediaAttributes extends HtmlGlobalAttributes {
-	autoplay?: boolean;
-	controls?: boolean;
-	crossorigin?: "" | "anonymous" | "use-credentials";
-	loop?: boolean;
-	muted?: boolean;
-	preload?: "none" | "metadata" | "auto" | "";
-	src?: string;
-}
+		interface HtmlMapTag extends HtmlTag {
+			name?: string;
+		}
 
-export interface HtmlMetaAttributes extends HtmlGlobalAttributes {
-	charset?: string;
-	content?: string;
-	"http-equiv"?: string;
-	media?: string;
-	name?: string;
-}
+		interface HtmlMetaTag extends HtmlTag {
+			charset?: string;
+			content?: string;
+			"http-equiv"?: string;
+			media?: string;
+			name?: string;
+		}
 
-export interface HtmlMeterAttributes extends HtmlGlobalAttributes {
-	form?: string;
-	high?: number | string;
-	low?: number | string;
-	max?: number | string;
-	min?: number | string;
-	optimum?: number | string;
-	value?: number | string;
-}
+		interface HtmlMeterTag extends HtmlTag {
+			form?: string;
+			high?: number | string;
+			low?: number | string;
+			max?: number | string;
+			min?: number | string;
+			optimum?: number | string;
+			value?: number | string;
+		}
 
-export interface HtmlObjectAttributes extends HtmlGlobalAttributes {
-	data?: string;
-	form?: string;
-	height?: number | string;
-	name?: string;
-	type?: string;
-	width?: number | string;
-}
+		interface HtmlObjectTag extends HtmlTag {
+			data?: string;
+			form?: string;
+			height?: number | string;
+			name?: string;
+			type?: string;
+			width?: number | string;
+		}
 
-export interface HtmlOlAttributes extends HtmlGlobalAttributes {
-	reversed?: boolean;
-	start?: number | string;
-	type?: "1" | "a" | "A" | "i" | "I";
-}
+		interface HtmlOListTag extends HtmlTag {
+			reversed?: boolean;
+			start?: number | string;
+			type?: "1" | "a" | "A" | "i" | "I";
+		}
 
-export interface HtmlOptgroupAttributes extends HtmlGlobalAttributes {
-	disabled?: boolean;
-	label?: string;
-}
+		interface HtmlOptgroupTag extends HtmlTag {
+			disabled?: boolean;
+			label?: string;
+		}
 
-export interface HtmlOptionAttributes extends HtmlGlobalAttributes {
-	disabled?: boolean;
-	label?: string;
-	selected?: boolean;
-	value?: string;
-}
+		interface HtmlOptionTag extends HtmlTag {
+			disabled?: boolean;
+			label?: string;
+			selected?: boolean;
+			value?: string;
+		}
 
-export interface HtmlOutputAttributes extends HtmlGlobalAttributes {
-	for?: string;
-	form?: string;
-	name?: string;
-}
+		interface HtmlOutputTag extends HtmlTag {
+			for?: string;
+			form?: string;
+			name?: string;
+		}
 
-export interface HtmlProgressAttributes extends HtmlGlobalAttributes {
-	max?: number | string;
-	value?: number | string;
-}
+		interface HtmlProgressTag extends HtmlTag {
+			max?: number | string;
+			value?: number | string;
+		}
 
-export interface HtmlQuoteAttributes extends HtmlGlobalAttributes {
-	cite?: string;
-}
+		interface HtmlScriptTag extends HtmlTag {
+			async?: boolean;
+			crossorigin?: "" | "anonymous" | "use-credentials";
+			defer?: boolean;
+			fetchpriority?: "high" | "low" | "auto";
+			integrity?: string;
+			nomodule?: boolean;
+			referrerpolicy?: string;
+			src?: string;
+			type?: string;
+		}
 
-export interface HtmlScriptAttributes extends HtmlGlobalAttributes {
-	async?: boolean;
-	crossorigin?: "" | "anonymous" | "use-credentials";
-	defer?: boolean;
-	fetchpriority?: "high" | "low" | "auto";
-	integrity?: string;
-	nomodule?: boolean;
-	referrerpolicy?: string;
-	src?: string;
-	type?: string;
-}
+		interface HtmlSelectTag extends HtmlTag {
+			autocomplete?: string;
+			disabled?: boolean;
+			form?: string;
+			multiple?: boolean;
+			name?: string;
+			required?: boolean;
+			size?: number | string;
+		}
 
-export interface HtmlSelectAttributes extends HtmlGlobalAttributes {
-	autocomplete?: string;
-	disabled?: boolean;
-	form?: string;
-	multiple?: boolean;
-	name?: string;
-	required?: boolean;
-	size?: number | string;
-}
+		interface HtmlSlotTag extends HtmlTag {
+			name?: string;
+		}
 
-export interface HtmlSlotAttributes extends HtmlGlobalAttributes {
-	name?: string;
-}
+		interface HtmlSourceTag extends HtmlTag {
+			height?: number | string;
+			media?: string;
+			sizes?: string;
+			src?: string;
+			srcset?: string;
+			type?: string;
+			width?: number | string;
+		}
 
-export interface HtmlSourceAttributes extends HtmlGlobalAttributes {
-	height?: number | string;
-	media?: string;
-	sizes?: string;
-	src?: string;
-	srcset?: string;
-	type?: string;
-	width?: number | string;
-}
+		interface HtmlStyleTag extends HtmlTag {
+			media?: string;
+			nonce?: string;
+		}
 
-export interface HtmlStyleAttributes extends HtmlGlobalAttributes {
-	media?: string;
-	nonce?: string;
-}
+		interface HtmlTableTag extends HtmlTag {
+			align?: string;
+		}
 
-export interface HtmlTableAttributes extends HtmlGlobalAttributes {
-	align?: string;
-}
+		interface HtmlTableSectionTag extends HtmlTag {}
 
-export interface HtmlTdAttributes extends HtmlGlobalAttributes {
-	colspan?: number | string;
-	headers?: string;
-	rowspan?: number | string;
-}
+		interface HtmlTableRowTag extends HtmlTag {}
 
-export interface HtmlTemplateAttributes extends HtmlGlobalAttributes {
-	shadowrootmode?: "open" | "closed";
-}
+		interface HtmlTableDataCellTag extends HtmlTag {
+			colspan?: number | string;
+			headers?: string;
+			rowspan?: number | string;
+		}
 
-export interface HtmlTextareaAttributes extends HtmlGlobalAttributes {
-	autocomplete?: string;
-	cols?: number | string;
-	dirname?: string;
-	disabled?: boolean;
-	form?: string;
-	maxlength?: number | string;
-	minlength?: number | string;
-	name?: string;
-	placeholder?: string;
-	readonly?: boolean;
-	required?: boolean;
-	rows?: number | string;
-	wrap?: "hard" | "soft";
-}
+		interface HtmlTemplateTag extends HtmlTag {
+			shadowrootmode?: "open" | "closed";
+		}
 
-export interface HtmlThAttributes extends HtmlGlobalAttributes {
-	abbr?: string;
-	colspan?: number | string;
-	headers?: string;
-	rowspan?: number | string;
-	scope?: "row" | "col" | "rowgroup" | "colgroup";
-}
+		interface HtmlTextAreaTag extends HtmlTag {
+			autocomplete?: string;
+			cols?: number | string;
+			dirname?: string;
+			disabled?: boolean;
+			form?: string;
+			maxlength?: number | string;
+			minlength?: number | string;
+			name?: string;
+			placeholder?: string;
+			readonly?: boolean;
+			required?: boolean;
+			rows?: number | string;
+			wrap?: "hard" | "soft";
+		}
 
-export interface HtmlTimeAttributes extends HtmlGlobalAttributes {
-	datetime?: string;
-}
+		interface HtmlTableHeaderCellTag extends HtmlTag {
+			abbr?: string;
+			colspan?: number | string;
+			headers?: string;
+			rowspan?: number | string;
+			scope?: "row" | "col" | "rowgroup" | "colgroup";
+		}
 
-export interface HtmlTrackAttributes extends HtmlGlobalAttributes {
-	default?: boolean;
-	kind?: "subtitles" | "captions" | "descriptions" | "chapters" | "metadata";
-	label?: string;
-	src?: string;
-	srclang?: string;
-}
+		interface HtmlTimeTag extends HtmlTag {
+			datetime?: string;
+		}
 
-export interface HtmlVideoAttributes extends HtmlMediaAttributes {
-	disablepictureinpicture?: boolean;
-	height?: number | string;
-	playsinline?: boolean;
-	poster?: string;
-	width?: number | string;
-}
+		interface HtmlTrackTag extends HtmlTag {
+			default?: boolean;
+			kind?:
+				| "subtitles"
+				| "captions"
+				| "descriptions"
+				| "chapters"
+				| "metadata";
+			label?: string;
+			src?: string;
+			srclang?: string;
+		}
 
-// ---------------------------------------------------------------------------
-// JSX namespace
-// ---------------------------------------------------------------------------
+		interface HtmlVideoTag extends HtmlMediaTag {
+			disablepictureinpicture?: boolean;
+			height?: number | string;
+			playsinline?: boolean;
+			poster?: string;
+			width?: number | string;
+		}
 
-export declare namespace JSX {
-	type Element = string;
-	type ElementType = string | ((props: any) => any);
+		interface HtmlSvgTag extends HtmlTag {
+			[attr: string]: any;
+		}
 
-	interface IntrinsicElements {
-		a: HtmlAnchorAttributes;
-		abbr: HtmlGlobalAttributes;
-		address: HtmlGlobalAttributes;
-		area: HtmlAreaAttributes;
-		article: HtmlGlobalAttributes;
-		aside: HtmlGlobalAttributes;
-		audio: HtmlAudioAttributes;
-		b: HtmlGlobalAttributes;
-		base: HtmlBaseAttributes;
-		bdi: HtmlGlobalAttributes;
-		bdo: HtmlGlobalAttributes;
-		blockquote: HtmlBlockquoteAttributes;
-		body: HtmlGlobalAttributes;
-		br: HtmlGlobalAttributes;
-		button: HtmlButtonAttributes;
-		canvas: HtmlCanvasAttributes;
-		caption: HtmlGlobalAttributes;
-		cite: HtmlGlobalAttributes;
-		code: HtmlGlobalAttributes;
-		col: HtmlColAttributes;
-		colgroup: HtmlColgroupAttributes;
-		data: HtmlDataAttributes;
-		datalist: HtmlGlobalAttributes;
-		dd: HtmlGlobalAttributes;
-		del: HtmlDelAttributes;
-		details: HtmlDetailsAttributes;
-		dfn: HtmlGlobalAttributes;
-		dialog: HtmlDialogAttributes;
-		div: HtmlGlobalAttributes;
-		dl: HtmlGlobalAttributes;
-		dt: HtmlGlobalAttributes;
-		em: HtmlGlobalAttributes;
-		embed: HtmlEmbedAttributes;
-		fieldset: HtmlFieldsetAttributes;
-		figcaption: HtmlGlobalAttributes;
-		figure: HtmlGlobalAttributes;
-		footer: HtmlGlobalAttributes;
-		form: HtmlFormAttributes;
-		h1: HtmlGlobalAttributes;
-		h2: HtmlGlobalAttributes;
-		h3: HtmlGlobalAttributes;
-		h4: HtmlGlobalAttributes;
-		h5: HtmlGlobalAttributes;
-		h6: HtmlGlobalAttributes;
-		head: HtmlGlobalAttributes;
-		header: HtmlGlobalAttributes;
-		hgroup: HtmlGlobalAttributes;
-		hr: HtmlGlobalAttributes;
-		html: HtmlHtmlAttributes;
-		i: HtmlGlobalAttributes;
-		iframe: HtmlIframeAttributes;
-		img: HtmlImgAttributes;
-		input: HtmlInputAttributes;
-		ins: HtmlInsAttributes;
-		kbd: HtmlGlobalAttributes;
-		label: HtmlLabelAttributes;
-		legend: HtmlGlobalAttributes;
-		li: HtmlLiAttributes;
-		link: HtmlLinkAttributes;
-		main: HtmlGlobalAttributes;
-		map: HtmlMapAttributes;
-		mark: HtmlGlobalAttributes;
-		menu: HtmlGlobalAttributes;
-		meta: HtmlMetaAttributes;
-		meter: HtmlMeterAttributes;
-		nav: HtmlGlobalAttributes;
-		noscript: HtmlGlobalAttributes;
-		object: HtmlObjectAttributes;
-		ol: HtmlOlAttributes;
-		optgroup: HtmlOptgroupAttributes;
-		option: HtmlOptionAttributes;
-		output: HtmlOutputAttributes;
-		p: HtmlGlobalAttributes;
-		picture: HtmlGlobalAttributes;
-		pre: HtmlGlobalAttributes;
-		progress: HtmlProgressAttributes;
-		q: HtmlQuoteAttributes;
-		rp: HtmlGlobalAttributes;
-		rt: HtmlGlobalAttributes;
-		ruby: HtmlGlobalAttributes;
-		s: HtmlGlobalAttributes;
-		samp: HtmlGlobalAttributes;
-		script: HtmlScriptAttributes;
-		search: HtmlGlobalAttributes;
-		section: HtmlGlobalAttributes;
-		select: HtmlSelectAttributes;
-		slot: HtmlSlotAttributes;
-		small: HtmlGlobalAttributes;
-		source: HtmlSourceAttributes;
-		span: HtmlGlobalAttributes;
-		strong: HtmlGlobalAttributes;
-		style: HtmlStyleAttributes;
-		sub: HtmlGlobalAttributes;
-		summary: HtmlGlobalAttributes;
-		sup: HtmlGlobalAttributes;
-		table: HtmlTableAttributes;
-		tbody: HtmlGlobalAttributes;
-		td: HtmlTdAttributes;
-		template: HtmlTemplateAttributes;
-		textarea: HtmlTextareaAttributes;
-		tfoot: HtmlGlobalAttributes;
-		th: HtmlThAttributes;
-		thead: HtmlGlobalAttributes;
-		time: HtmlTimeAttributes;
-		title: HtmlGlobalAttributes;
-		tr: HtmlGlobalAttributes;
-		track: HtmlTrackAttributes;
-		u: HtmlGlobalAttributes;
-		ul: HtmlGlobalAttributes;
-		var: HtmlGlobalAttributes;
-		video: HtmlVideoAttributes;
-		wbr: HtmlGlobalAttributes;
+		// -------------------------------------------------------------------
+		// Intrinsic elements
+		// -------------------------------------------------------------------
 
-		// SVG elements (basic support)
-		svg: HtmlGlobalAttributes & { [attr: string]: any };
-		path: HtmlGlobalAttributes & { [attr: string]: any };
-		circle: HtmlGlobalAttributes & { [attr: string]: any };
-		rect: HtmlGlobalAttributes & { [attr: string]: any };
-		line: HtmlGlobalAttributes & { [attr: string]: any };
-		polyline: HtmlGlobalAttributes & { [attr: string]: any };
-		polygon: HtmlGlobalAttributes & { [attr: string]: any };
-		ellipse: HtmlGlobalAttributes & { [attr: string]: any };
-		text: HtmlGlobalAttributes & { [attr: string]: any };
-		g: HtmlGlobalAttributes & { [attr: string]: any };
-		defs: HtmlGlobalAttributes & { [attr: string]: any };
-		use: HtmlGlobalAttributes & { [attr: string]: any };
-		image: HtmlGlobalAttributes & { [attr: string]: any };
-		clipPath: HtmlGlobalAttributes & { [attr: string]: any };
-		mask: HtmlGlobalAttributes & { [attr: string]: any };
-		pattern: HtmlGlobalAttributes & { [attr: string]: any };
-		linearGradient: HtmlGlobalAttributes & { [attr: string]: any };
-		radialGradient: HtmlGlobalAttributes & { [attr: string]: any };
-		stop: HtmlGlobalAttributes & { [attr: string]: any };
-		symbol: HtmlGlobalAttributes & { [attr: string]: any };
-		animate: HtmlGlobalAttributes & { [attr: string]: any };
-		animateTransform: HtmlGlobalAttributes & { [attr: string]: any };
-		foreignObject: HtmlGlobalAttributes & { [attr: string]: any };
+		interface IntrinsicElements {
+			a: HtmlAnchorTag;
+			abbr: HtmlTag;
+			address: HtmlTag;
+			area: HtmlAreaTag;
+			article: HtmlTag;
+			aside: HtmlTag;
+			audio: HtmlAudioTag;
+			b: HtmlTag;
+			base: HtmlBaseTag;
+			bdi: HtmlTag;
+			bdo: HtmlTag;
+			blockquote: HtmlQuoteTag;
+			body: HtmlTag;
+			br: HtmlTag;
+			button: HtmlButtonTag;
+			canvas: HtmlCanvasTag;
+			caption: HtmlTag;
+			cite: HtmlTag;
+			code: HtmlTag;
+			col: HtmlTableColTag;
+			colgroup: HtmlTableColTag;
+			data: HtmlDataTag;
+			datalist: HtmlTag;
+			dd: HtmlTag;
+			del: HtmlModTag;
+			details: HtmlDetailsTag;
+			dfn: HtmlTag;
+			dialog: HtmlDialogTag;
+			div: HtmlTag;
+			dl: HtmlTag;
+			dt: HtmlTag;
+			em: HtmlTag;
+			embed: HtmlEmbedTag;
+			fieldset: HtmlFieldSetTag;
+			figcaption: HtmlTag;
+			figure: HtmlTag;
+			footer: HtmlTag;
+			form: HtmlFormTag;
+			h1: HtmlTag;
+			h2: HtmlTag;
+			h3: HtmlTag;
+			h4: HtmlTag;
+			h5: HtmlTag;
+			h6: HtmlTag;
+			head: HtmlTag;
+			header: HtmlTag;
+			hgroup: HtmlTag;
+			hr: HtmlTag;
+			html: HtmlHtmlTag;
+			i: HtmlTag;
+			iframe: HtmlIFrameTag;
+			img: HtmlImageTag;
+			input: HtmlInputTag;
+			ins: HtmlModTag;
+			kbd: HtmlTag;
+			label: HtmlLabelTag;
+			legend: HtmlTag;
+			li: HtmlLITag;
+			link: HtmlLinkTag;
+			main: HtmlTag;
+			map: HtmlMapTag;
+			mark: HtmlTag;
+			menu: HtmlTag;
+			meta: HtmlMetaTag;
+			meter: HtmlMeterTag;
+			nav: HtmlTag;
+			noscript: HtmlTag;
+			object: HtmlObjectTag;
+			ol: HtmlOListTag;
+			optgroup: HtmlOptgroupTag;
+			option: HtmlOptionTag;
+			output: HtmlOutputTag;
+			p: HtmlTag;
+			picture: HtmlTag;
+			pre: HtmlTag;
+			progress: HtmlProgressTag;
+			q: HtmlQuoteTag;
+			rp: HtmlTag;
+			rt: HtmlTag;
+			ruby: HtmlTag;
+			s: HtmlTag;
+			samp: HtmlTag;
+			script: HtmlScriptTag;
+			search: HtmlTag;
+			section: HtmlTag;
+			select: HtmlSelectTag;
+			slot: HtmlSlotTag;
+			small: HtmlTag;
+			source: HtmlSourceTag;
+			span: HtmlTag;
+			strong: HtmlTag;
+			style: HtmlStyleTag;
+			sub: HtmlTag;
+			summary: HtmlTag;
+			sup: HtmlTag;
+			table: HtmlTableTag;
+			tbody: HtmlTableSectionTag;
+			td: HtmlTableDataCellTag;
+			template: HtmlTemplateTag;
+			textarea: HtmlTextAreaTag;
+			tfoot: HtmlTableSectionTag;
+			th: HtmlTableHeaderCellTag;
+			thead: HtmlTableSectionTag;
+			time: HtmlTimeTag;
+			title: HtmlTag;
+			tr: HtmlTableRowTag;
+			track: HtmlTrackTag;
+			u: HtmlTag;
+			ul: HtmlTag;
+			var: HtmlTag;
+			video: HtmlVideoTag;
+			wbr: HtmlTag;
+
+			// SVG elements
+			svg: HtmlSvgTag;
+			path: HtmlSvgTag;
+			circle: HtmlSvgTag;
+			rect: HtmlSvgTag;
+			line: HtmlSvgTag;
+			polyline: HtmlSvgTag;
+			polygon: HtmlSvgTag;
+			ellipse: HtmlSvgTag;
+			text: HtmlSvgTag;
+			g: HtmlSvgTag;
+			defs: HtmlSvgTag;
+			use: HtmlSvgTag;
+			image: HtmlSvgTag;
+			clipPath: HtmlSvgTag;
+			mask: HtmlSvgTag;
+			pattern: HtmlSvgTag;
+			linearGradient: HtmlSvgTag;
+			radialGradient: HtmlSvgTag;
+			stop: HtmlSvgTag;
+			symbol: HtmlSvgTag;
+			animate: HtmlSvgTag;
+			animateTransform: HtmlSvgTag;
+			foreignObject: HtmlSvgTag;
+			filter: HtmlSvgTag;
+			feBlend: HtmlSvgTag;
+			feColorMatrix: HtmlSvgTag;
+			feComponentTransfer: HtmlSvgTag;
+			feComposite: HtmlSvgTag;
+			feConvolveMatrix: HtmlSvgTag;
+			feDiffuseLighting: HtmlSvgTag;
+			feDisplacementMap: HtmlSvgTag;
+			feDistantLight: HtmlSvgTag;
+			feDropShadow: HtmlSvgTag;
+			feFlood: HtmlSvgTag;
+			feFuncA: HtmlSvgTag;
+			feFuncB: HtmlSvgTag;
+			feFuncG: HtmlSvgTag;
+			feFuncR: HtmlSvgTag;
+			feGaussianBlur: HtmlSvgTag;
+			feImage: HtmlSvgTag;
+			feMerge: HtmlSvgTag;
+			feMergeNode: HtmlSvgTag;
+			feMorphology: HtmlSvgTag;
+			feOffset: HtmlSvgTag;
+			fePointLight: HtmlSvgTag;
+			feSpecularLighting: HtmlSvgTag;
+			feSpotLight: HtmlSvgTag;
+			feTile: HtmlSvgTag;
+			feTurbulence: HtmlSvgTag;
+			marker: HtmlSvgTag;
+			metadata: HtmlSvgTag;
+			mpath: HtmlSvgTag;
+			set: HtmlSvgTag;
+			switch: HtmlSvgTag;
+			textPath: HtmlSvgTag;
+			tspan: HtmlSvgTag;
+			view: HtmlSvgTag;
+			desc: HtmlSvgTag;
+			animateMotion: HtmlSvgTag;
+		}
+
+		interface ElementChildrenAttribute {
+			children: {};
+		}
+
+		type IntrinsicAttributes = {};
 	}
-
-	interface ElementChildrenAttribute {
-		children: {};
-	}
-
-	type IntrinsicAttributes = {};
 }

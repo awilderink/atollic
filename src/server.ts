@@ -30,8 +30,19 @@ export function getProductionAssets(): string | undefined {
 
 /**
  * Wrap a pre-rendered HTML string in a Response with proper DOCTYPE and headers.
+ * Accepts both sync and async JSX elements.
  */
-export function html(input: string): Response {
+export function html(
+	input: string | Promise<string>,
+): Response | Promise<Response> {
+	if (input instanceof Promise) {
+		return input.then(
+			(resolved) =>
+				new Response(ensureDoctype(resolved), {
+					headers: { "content-type": "text/html; charset=utf-8" },
+				}),
+		);
+	}
 	return new Response(ensureDoctype(input), {
 		headers: { "content-type": "text/html; charset=utf-8" },
 	});
