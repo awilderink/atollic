@@ -11,7 +11,15 @@
  * - `atollic:after-morph`     — detail: { defaultSwap }, after HMR page replacement
  */
 
-import { Idiomorph } from "idiomorph";
+// Lazy-loaded — only needed when morphPage runs with default swap
+let _idiomorphPromise: Promise<typeof import("idiomorph").Idiomorph> | null =
+	null;
+function getIdiomorph() {
+	if (!_idiomorphPromise) {
+		_idiomorphPromise = import("idiomorph").then((mod) => mod.Idiomorph);
+	}
+	return _idiomorphPromise;
+}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -194,6 +202,7 @@ async function morphPage(newHtml: string): Promise<void> {
 		// Snapshot mounted islands before morph to detect removals
 		const before = new Set(mounted.keys());
 
+		const Idiomorph = await getIdiomorph();
 		Idiomorph.morph(document.body, newDoc.body, {
 			morphStyle: "innerHTML",
 		});
@@ -230,42 +239,44 @@ export function initRuntime(): void {
 	});
 
 	// --- MutationObserver for dynamic content ---------------------------------
-	let mountQueued = false;
-	const observer = new MutationObserver((mutations) => {
-		if (replacing) return;
-		for (const m of mutations) {
-			for (const node of m.removedNodes) {
-				if (node instanceof HTMLElement) {
-					if (node.hasAttribute(ISLAND_ATTR)) {
-						disposeIsland(node);
-					}
-					for (const child of node.querySelectorAll<HTMLElement>(
-						ISLAND_SELECTOR,
-					)) {
-						disposeIsland(child);
+	if (registry.size > 0) {
+		let mountQueued = false;
+		const observer = new MutationObserver((mutations) => {
+			if (replacing) return;
+			for (const m of mutations) {
+				for (const node of m.removedNodes) {
+					if (node instanceof HTMLElement) {
+						if (node.hasAttribute(ISLAND_ATTR)) {
+							disposeIsland(node);
+						}
+						for (const child of node.querySelectorAll<HTMLElement>(
+							ISLAND_SELECTOR,
+						)) {
+							disposeIsland(child);
+						}
 					}
 				}
-			}
-			if (!mountQueued) {
-				for (const node of m.addedNodes) {
-					if (node instanceof HTMLElement) {
-						if (
-							node.hasAttribute(ISLAND_ATTR) ||
-							node.querySelector(ISLAND_SELECTOR)
-						) {
-							mountQueued = true;
-							queueMicrotask(() => {
-								mountQueued = false;
-								mountIslands();
-							});
-							break;
+				if (!mountQueued) {
+					for (const node of m.addedNodes) {
+						if (node instanceof HTMLElement) {
+							if (
+								node.hasAttribute(ISLAND_ATTR) ||
+								node.querySelector(ISLAND_SELECTOR)
+							) {
+								mountQueued = true;
+								queueMicrotask(() => {
+									mountQueued = false;
+									mountIslands();
+								});
+								break;
+							}
 						}
 					}
 				}
 			}
-		}
-	});
-	observer.observe(document.body, { childList: true, subtree: true });
+		});
+		observer.observe(document.body, { childList: true, subtree: true });
+	}
 
 	// --- HMR: refetch & morph on server-side changes ------------------------
 	if (import.meta.hot) {

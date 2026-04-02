@@ -76,6 +76,8 @@ export interface AtollicOptions {
 	entry: string;
 	/** Framework adapters. Islands use the first adapter by default. */
 	frameworks?: FrameworkAdapter[];
+	/** Additional modules to externalize from the SSR build (not bundled). */
+	external?: string[];
 }
 
 interface IslandInfo {
@@ -345,8 +347,7 @@ export function atollic(options: AtollicOptions): Plugin[] {
 							copyPublicDir: false,
 							rollupOptions: {
 								input: { app: VIRTUAL_PROD_ENTRY_ID },
-								// Externalize runtime-only modules that can't be bundled
-								external: ["bun"],
+								external: ["bun", ...(options.external ?? [])],
 							},
 						},
 					},
@@ -657,9 +658,7 @@ console.log(\`Listening on http://localhost:\${port}\`);
 
 					if (isDoc) {
 						body = ensureDoctype(body);
-					}
 
-					if (ct.includes("text/html")) {
 						if (!cachedCssUrls) {
 							cachedCssUrls = collectCssUrls(server, resolvedEntry);
 						}
