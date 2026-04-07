@@ -1,6 +1,26 @@
 {
 	"name": "atollic",
 	"version": "0.0.1",
+	"description": "Island architecture for WinterCG-compatible runtimes. Bring-your-own server (Elysia, Hono, …) and UI framework, powered by Vite.",
+	"keywords": [
+		"wintercg",
+		"islands",
+		"island-architecture",
+		"vite",
+		"ssr",
+		"hydration",
+		"elysia",
+		"hono"
+	],
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/awilderink/atollic.git"
+	},
+	"bugs": {
+		"url": "https://github.com/awilderink/atollic/issues"
+	},
+	"homepage": "https://github.com/awilderink/atollic#readme",
 	"type": "module",
 	"scripts": {
 		"dev:elysia": "bunx --bun vite --config examples/elysia/vite.config.ts",
