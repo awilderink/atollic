@@ -39,4 +39,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # actions/setup-node writes a project .npmrc whose auth token reads
+          # from NODE_AUTH_TOKEN. changesets/action reads NPM_TOKEN. Supply
+          # both so npm publish can actually authenticate.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"
