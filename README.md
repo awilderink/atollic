@@ -1,4 +1,8 @@
-# atollic
+<p align="center">
+  <img src="https://raw.githubusercontent.com/awilderink/atollic/main/assets/logo.png" alt="Atollic" width="180" />
+</p>
+
+<h1 align="center">Atollic</h1>
 
 [![npm version](https://img.shields.io/npm/v/atollic.svg)](https://www.npmjs.com/package/atollic)
 [![CI](https://github.com/awilderink/atollic/actions/workflows/ci.yml/badge.svg)](https://github.com/awilderink/atollic/actions/workflows/ci.yml)
@@ -7,7 +11,7 @@
 
 Island architecture for WinterCG-compatible runtimes. Bring your own server (Elysia, Hono, …) and your own UI framework, powered by Vite.
 
-> **Status: experimental.** atollic is pre-1.0 (`v0.0.x`). The API may change between minor versions until 1.0.
+> **Status: experimental.** Atollic is pre-1.0 (`v0.0.x`). The API may change between minor versions until 1.0.
 
 - **Server-agnostic** — any WinterCG runtime that speaks `Request`/`Response` (Elysia, Hono, Bun, Node via adapter, Workers, …).
 - **UI-framework-agnostic** — ships with a Solid.js adapter; Preact / React / others pluggable via `FrameworkAdapter`.
@@ -24,7 +28,7 @@ Server (Elysia, Hono, ...)     Client (Browser)
 3. Full page sent to browser    6. Hydrate with matching props
 ```
 
-- Pages are **server-rendered JSX** using atollic's built-in HTML runtime — no virtual DOM, just strings.
+- Pages are **server-rendered JSX** using Atollic's built-in HTML runtime — no virtual DOM, just strings.
 - Components marked with `"use client"` become **islands** — they SSR on the server and hydrate on the client.
 - Everything else is zero-JS static HTML.
 
@@ -116,7 +120,7 @@ bun dist/server/app.js # Start production server
 
 ## Server adapters
 
-Atollic is decoupled from any specific server. Your entry file exports a fetch function — atollic handles the rest.
+Atollic is decoupled from any specific server. Your entry file exports a fetch function — Atollic handles the rest.
 
 ### Elysia
 
@@ -133,7 +137,7 @@ export default app.handle;
 
 The Elysia adapter intercepts responses via `mapResponse`, extracts HTML, ensures DOCTYPE, and injects production assets.
 
-The HTML-extraction step is **registry-based** — each `FrameworkAdapter` contributes an extractor function (via the `extractHtml` field) that knows how to convert its framework's SSR output (e.g. Solid's `{ t: "..." }` shape) into a plain HTML string. The atollic Vite plugin wires these registrations up automatically before the first request, so the core stays framework-agnostic. Plain strings are always recognized as a fallback. See [Writing a framework adapter](#writing-a-framework-adapter) and the [`registerHtmlExtractor`](#atollic) API.
+The HTML-extraction step is **registry-based** — each `FrameworkAdapter` contributes an extractor function (via the `extractHtml` field) that knows how to convert its framework's SSR output (e.g. Solid's `{ t: "..." }` shape) into a plain HTML string. The Atollic Vite plugin wires these registrations up automatically before the first request, so the core stays framework-agnostic. Plain strings are always recognized as a fallback. See [Writing a framework adapter](#writing-a-framework-adapter) and the [`registerHtmlExtractor`](#atollic) API.
 
 ### Hono
 
@@ -257,7 +261,7 @@ Atollic includes a server-side JSX runtime (`atollic/jsx-runtime`) that compiles
 
 ## `<Head />`
 
-Place `<Head />` in your document `<head>` to mark where atollic injects CSS and script tags:
+Place `<Head />` in your document `<head>` to mark where Atollic injects CSS and script tags:
 
 ```tsx
 import { Head } from "atollic/head";
@@ -268,13 +272,13 @@ import { Head } from "atollic/head";
 </head>
 ```
 
-In dev, atollic injects the hydration bootstrap, collected CSS, and the client entry. In production, it injects the built asset tags. If `<Head />` is omitted, assets are injected before `</head>` as a fallback.
+In dev, Atollic injects the hydration bootstrap, collected CSS, and the client entry. In production, it injects the built asset tags. If `<Head />` is omitted, assets are injected before `</head>` as a fallback.
 
 ## HMR
 
 Dual HMR strategy for instant feedback:
 
-- **Server file changes** — atollic sends a custom `atollic:reload` event. The client refetches the page and uses [idiomorph](https://github.com/bigskysoftware/idiomorph) to morph the DOM, preserving mounted island state.
+- **Server file changes** — Atollic sends a custom `atollic:reload` event. The client refetches the page and uses [idiomorph](https://github.com/bigskysoftware/idiomorph) to morph the DOM, preserving mounted island state.
 - **Island file changes** — handled by the framework's own HMR (e.g., `solid-refresh`).
 
 ### Events
@@ -369,7 +373,7 @@ export function myFramework(): FrameworkAdapter {
 }
 ```
 
-The `extractHtml` strings from every registered adapter are emitted into a generated server-boot module that runs once before the first request. Each one calls `registerHtmlExtractor()` on the atollic core, which `extractHtml` (used internally by the Elysia and Hono adapters) iterates in order. This is how the core stays decoupled from any specific UI framework's SSR output shape.
+The `extractHtml` strings from every registered adapter are emitted into a generated server-boot module that runs once before the first request. Each one calls `registerHtmlExtractor()` on the Atollic core, which `extractHtml` (used internally by the Elysia and Hono adapters) iterates in order. This is how the core stays decoupled from any specific UI framework's SSR output shape.
 
 ## API reference
 
