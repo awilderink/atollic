@@ -26,5 +26,16 @@ jobs:
       - name: Lint
         run: bun run lint
 
+      - name: Test
+        run: bun test
+
       - name: Build
         run: bun run build
+
+      - name: Build example (elysia)
+        working-directory: examples/elysia
+        run: bunx --bun vite build
+
+      - name: Build example (hono)
+        working-directory: examples/hono
+        run: bunx --bun vite build

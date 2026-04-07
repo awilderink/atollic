@@ -23,15 +23,17 @@
 	"homepage": "https://github.com/awilderink/atollic#readme",
 	"type": "module",
 	"scripts": {
-		"dev:elysia": "bunx --bun vite --config examples/elysia/vite.config.ts",
-		"dev:hono": "bunx --bun vite --config examples/hono/vite.config.ts",
+		"dev:elysia": "cd examples/elysia && bunx --bun vite",
+		"dev:hono": "cd examples/hono && bunx --bun vite",
 		"build": "vite build && tsc",
+		"build:examples": "cd examples/elysia && bunx --bun vite build && cd ../hono && bunx --bun vite build",
 		"prepare": "npm run build",
 		"prepublishOnly": "npm run build",
 		"typecheck": "tsc --noEmit && tsc --noEmit --project examples/elysia/tsconfig.json && tsc --noEmit --project examples/hono/tsconfig.json",
 		"format": "biome format --write .",
 		"lint": "biome lint .",
 		"check": "biome check --write .",
+		"test": "bun test",
 		"changeset": "changeset",
 		"version": "changeset version",
 		"release": "changeset publish"
@@ -118,6 +120,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.7",
+		"@changesets/changelog-github": "^0.5.0",
 		"@changesets/cli": "^2.27.10",
 		"@types/node": "^25.5.0",
 		"bun-types": "^1.3.11",

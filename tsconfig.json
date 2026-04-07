@@ -19,5 +19,6 @@
 			"atollic/jsx-dev-runtime": ["./src/html/jsx-dev-runtime.ts"]
 		}
 	},
-	"include": ["src/**/*"]
+	"include": ["src/**/*"],
+	"exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
 }
