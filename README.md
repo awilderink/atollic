@@ -1,10 +1,13 @@
 # atollic
 
-Server-first web framework with interactive islands. Write your pages in JSX on the server, sprinkle in client-side components where you need interactivity — atollic handles SSR, hydration, and HMR automatically.
+Island architecture for WinterCG-compatible runtimes. Bring your own server (Elysia, Hono, …) and your own UI framework, powered by Vite.
 
-**Server-agnostic.** Works with any WinterCG-compatible server — Elysia, Hono, or anything that speaks `Request`/`Response`.
+> **Status: experimental.** atollic is pre-1.0 (`v0.0.x`). The API may change between minor versions until 1.0.
 
-**Framework-agnostic.** Ships with a Solid.js adapter. Preact and React adapters can be added via the `FrameworkAdapter` interface.
+- **Server-agnostic** — any WinterCG runtime that speaks `Request`/`Response` (Elysia, Hono, Bun, Node via adapter, Workers, …).
+- **UI-framework-agnostic** — ships with a Solid.js adapter; Preact / React / others pluggable via `FrameworkAdapter`.
+- **Zero-JS by default** — pages render to HTML strings on the server; only `"use client"` islands ship JavaScript.
+- **HMR with state preserved** — server changes morph the DOM via idiomorph, keeping mounted islands alive.
 
 ## How it works
 
@@ -23,7 +26,7 @@ Server (Elysia, Hono, ...)     Client (Browser)
 ## Quick start
 
 ```bash
-bun add atollicelysia solid-js vite-plugin-solid
+bun add atollic elysia solid-js vite-plugin-solid
 ```
 
 ### Project structure
@@ -420,8 +423,9 @@ type Children = string | string[] | Promise<string>
 
 ## Requirements
 
-- [Bun](https://bun.sh) runtime
+- A WinterCG-compatible runtime — [Bun](https://bun.sh), [Node](https://nodejs.org) (via fetch adapter), [Deno](https://deno.com), or Cloudflare Workers
 - [Vite](https://vite.dev) ^8.0.0
+- Examples and the bundled production server template currently target Bun; other runtimes work but require providing your own server entry
 
 ## License
 
