@@ -11,31 +11,55 @@ export function injectHead(html: string, tags: string): string {
 	return html;
 }
 
+// ---------------------------------------------------------------------------
+// HTML extractor registry
+// ---------------------------------------------------------------------------
+
 /**
- * Extract HTML from Solid's SSR output format.
- * Handles `{t: "<html>"}` objects and arrays of fragments.
+ * A function that converts a framework-specific SSR output value into an HTML
+ * string, or returns `null` if it doesn't recognize the shape.
+ */
+export type HtmlExtractor = (value: unknown) => string | null;
+
+/**
+ * The registry lives on `globalThis` so a single atollic core, loaded under
+ * any module URL, shares the same list of extractors. This mirrors the
+ * pattern used by `setProductionAssets`.
+ */
+const EXTRACTORS_KEY = "__atollicHtmlExtractors";
+
+function getExtractors(): HtmlExtractor[] {
+	const g = globalThis as Record<string, unknown>;
+	if (!Array.isArray(g[EXTRACTORS_KEY])) g[EXTRACTORS_KEY] = [];
+	return g[EXTRACTORS_KEY] as HtmlExtractor[];
+}
+
+/**
+ * Register a function that extracts an HTML string from a framework-specific
+ * SSR output. The atollic Vite plugin wires this up automatically — every
+ * `FrameworkAdapter` with an `extractHtml` source string gets registered
+ * before the first request is served.
+ *
+ * @returns A dispose function that removes the extractor.
+ */
+export function registerHtmlExtractor(fn: HtmlExtractor): () => void {
+	const list = getExtractors();
+	list.push(fn);
+	return () => {
+		const i = list.indexOf(fn);
+		if (i >= 0) list.splice(i, 1);
+	};
+}
+
+/**
+ * Convert a server response value into an HTML string by trying each
+ * registered framework extractor, then falling back to a plain string.
+ * Returns `null` when nothing recognizes the shape.
  */
 export function extractHtml(value: unknown): string | null {
-	if (
-		value &&
-		typeof value === "object" &&
-		"t" in value &&
-		typeof (value as { t: unknown }).t === "string"
-	) {
-		return (value as { t: string }).t;
-	}
-	if (Array.isArray(value)) {
-		const html = value
-			.flat(Infinity)
-			.map((item: unknown) => {
-				if (typeof item === "string") return item;
-				if (item && typeof item === "object" && "t" in item) {
-					return (item as { t: string }).t;
-				}
-				return "";
-			})
-			.join("");
-		return html || null;
+	for (const fn of getExtractors()) {
+		const result = fn(value);
+		if (result !== null) return result;
 	}
 	if (typeof value === "string") return value;
 	return null;

@@ -31,6 +31,8 @@ const VIRTUAL_CLIENT_ID = "virtual:atollic/client";
 const RESOLVED_VIRTUAL_CLIENT_ID = `\0${VIRTUAL_CLIENT_ID}`;
 const VIRTUAL_PROD_ENTRY_ID = "virtual:atollic/prod-entry";
 const RESOLVED_VIRTUAL_PROD_ENTRY_ID = `\0${VIRTUAL_PROD_ENTRY_ID}`;
+const VIRTUAL_SERVER_BOOT_ID = "virtual:atollic/server-boot";
+const RESOLVED_VIRTUAL_SERVER_BOOT_ID = `\0${VIRTUAL_SERVER_BOOT_ID}`;
 const VIRTUAL_FW_PREFIX = "virtual:atollic/fw-";
 const HMR_RELOAD_EVENT = "atollic:reload";
 const RAW_ISLAND_QUERY = "?raw-island";
@@ -119,6 +121,23 @@ function parseComponentExports(
 	}
 
 	return exports;
+}
+
+/**
+ * Generate the body of a server boot module that registers each adapter's
+ * `extractHtml` source as an HTML extractor on the atollic core.
+ *
+ * The result is consumed by both the dev virtual `server-boot` module and
+ * the production entry, so framework-specific response shapes (e.g. Solid's
+ * `{ t: "..." }`) are recognized at runtime without coupling the core to any
+ * particular framework.
+ */
+function generateExtractorRegistrations(adapters: FrameworkAdapter[]): string {
+	return adapters
+		.map((a) => a.extractHtml)
+		.filter((src): src is string => Boolean(src))
+		.map((src) => `registerHtmlExtractor(${src});`)
+		.join("\n");
 }
 
 function generateClientEntry(
@@ -492,6 +511,7 @@ export function atollic(options: AtollicOptions): Plugin[] {
 		resolveId(id) {
 			if (id === VIRTUAL_CLIENT_ID) return RESOLVED_VIRTUAL_CLIENT_ID;
 			if (id === VIRTUAL_PROD_ENTRY_ID) return RESOLVED_VIRTUAL_PROD_ENTRY_ID;
+			if (id === VIRTUAL_SERVER_BOOT_ID) return RESOLVED_VIRTUAL_SERVER_BOOT_ID;
 
 			// Virtual framework runtime modules
 			if (id.startsWith(VIRTUAL_FW_PREFIX)) {
@@ -510,11 +530,20 @@ export function atollic(options: AtollicOptions): Plugin[] {
 				return generateClientEntry(islands, clientScripts, cssImports, root);
 			}
 
+			if (id === RESOLVED_VIRTUAL_SERVER_BOOT_ID) {
+				const indexModule = resolve(__dirname, "index.js");
+				const registrations = generateExtractorRegistrations(adapters);
+				if (!registrations) return "// no html extractors registered\n";
+				return `import { registerHtmlExtractor } from "${indexModule}";\n${registrations}\n`;
+			}
+
 			if (id === RESOLVED_VIRTUAL_PROD_ENTRY_ID) {
 				const indexModule = resolve(__dirname, "index.js");
+				const registrations = generateExtractorRegistrations(adapters);
 				return `import { resolve, join } from "node:path";
-import { setProductionAssets } from "${indexModule}";
+import { setProductionAssets, registerHtmlExtractor } from "${indexModule}";
 setProductionAssets(${JSON.stringify(prodAssets)});
+${registrations}
 import handler from "${resolvedEntry}";
 
 const clientDir = resolve(import.meta.dirname, "..", "client");
@@ -602,6 +631,13 @@ console.log(\`Listening on http://localhost:\${port}\`);
 
 		configureServer(server: ViteDevServer) {
 			devServer = server;
+
+			// Eagerly load the server boot module so framework-specific HTML
+			// extractors are registered on the atollic core before the first
+			// request reaches the user's app.
+			server.ssrLoadModule(VIRTUAL_SERVER_BOOT_ID).catch((err) => {
+				console.error("[atollic] Failed to load server boot module:", err);
+			});
 
 			// Use pre-middleware so we run BEFORE Vite's SPA fallback.
 			// Vite asset/module requests are let through via the URL check.

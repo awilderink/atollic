@@ -32,7 +32,10 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			"atollic/jsx-runtime": resolve(__dirname, "src/html/jsx-runtime.ts"),
-			"atollic/jsx-dev-runtime": resolve(__dirname, "src/html/jsx-dev-runtime.ts"),
+			"atollic/jsx-dev-runtime": resolve(
+				__dirname,
+				"src/html/jsx-dev-runtime.ts",
+			),
 		},
 	},
 	build: {

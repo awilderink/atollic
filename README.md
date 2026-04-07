@@ -126,7 +126,9 @@ const app = new Elysia()
 export default app.handle;
 ```
 
-The Elysia adapter intercepts responses via `mapResponse`, extracts HTML from Solid's SSR format, ensures DOCTYPE, and injects production assets.
+The Elysia adapter intercepts responses via `mapResponse`, extracts HTML, ensures DOCTYPE, and injects production assets.
+
+The HTML-extraction step is **registry-based** — each `FrameworkAdapter` contributes an extractor function (via the `extractHtml` field) that knows how to convert its framework's SSR output (e.g. Solid's `{ t: "..." }` shape) into a plain HTML string. The atollic Vite plugin wires these registrations up automatically before the first request, so the core stays framework-agnostic. Plain strings are always recognized as a fallback. See [Writing a framework adapter](#writing-a-framework-adapter) and the [`registerHtmlExtractor`](#atollic) API.
 
 ### Hono
 
@@ -280,9 +282,9 @@ Listen to lifecycle events on `document`:
 | `atollic:before-morph` | `{ newDoc, mountedIslands }` | Cancelable, before HMR page morph |
 | `atollic:after-morph` | `{ defaultSwap }` | After HMR page morph |
 
-## htmx integration
+## htmx, Alpine, and other DOM-mutating libraries
 
-Islands hydrate automatically after htmx swaps. The client runtime listens for `htmx:afterSettle` and mounts any new `[data-island]` elements. A `MutationObserver` also catches dynamically added islands from any source.
+Islands added to the DOM after the initial mount — by htmx swaps, Alpine templates, or any other source — are picked up automatically. The client runtime installs a `MutationObserver` on `document.body` and mounts any newly inserted `[data-island]` element. No library-specific event listener is required.
 
 ## CSS handling
 
@@ -348,9 +350,21 @@ export function myFramework(): FrameworkAdapter {
 
     // Optional: script tag for hydration bootstrap (e.g., Solid's _$HY)
     hydrationScript: `<script>/* bootstrap */</script>`,
+
+    // Optional: source code for an extractor function `(value) => string | null`.
+    // Atollic includes this in the server boot module so the runtime knows
+    // how to convert this framework's SSR output (e.g. Solid's `{ t: "..." }`
+    // shape) into a plain HTML string. Frameworks whose SSR output is already
+    // a string can omit this — plain strings are always recognized.
+    extractHtml: `(value) => {
+      if (value && typeof value === "object" && "t" in value) return value.t;
+      return null;
+    }`,
   };
 }
 ```
+
+The `extractHtml` strings from every registered adapter are emitted into a generated server-boot module that runs once before the first request. Each one calls `registerHtmlExtractor()` on the atollic core, which `extractHtml` (used internally by the Elysia and Hono adapters) iterates in order. This is how the core stays decoupled from any specific UI framework's SSR output shape.
 
 ## API reference
 
@@ -368,9 +382,20 @@ atollic(options: AtollicOptions): Plugin[]
 ### `atollic`
 
 ```ts
-html(input: string): Response              // Wrap HTML string in a Response with DOCTYPE
+// Wrap an HTML string (or async JSX) in a Response with DOCTYPE.
+// Returns a Promise<Response> when given a Promise<string>.
+html(input: string | Promise<string>): Response | Promise<Response>
+
 setProductionAssets(assets: string): void   // Set production asset tags
 getProductionAssets(): string | undefined   // Get production asset tags
+
+// Register a function that converts a framework-specific SSR output value
+// into an HTML string (or returns null if it doesn't recognize the shape).
+// Normally wired up automatically by the Vite plugin from each adapter's
+// `extractHtml` field — call this directly only if you need a custom one.
+// Returns a dispose function.
+type HtmlExtractor = (value: unknown) => string | null
+registerHtmlExtractor(fn: HtmlExtractor): () => void
 ```
 
 ### `atollic/elysia`
@@ -402,15 +427,26 @@ solid(): FrameworkAdapter  // Solid.js framework adapter
 Types for server-side JSX:
 
 ```ts
-type Component<P = {}> = (props: P & { children?: Children }) => string
-type Children = string | string[] | Promise<string>
+type Children =
+  | string
+  | number
+  | bigint
+  | boolean
+  | null
+  | undefined
+  | Promise<Children>
+  | Children[]
+
+type Component<T = {}> = (
+  props: T & { children?: Children },
+) => string | Promise<string>
 ```
 
 ## Exports
 
 | Export | Description |
 |---|---|
-| `atollic` | Core — `html()`, `setProductionAssets()`, `getProductionAssets()` |
+| `atollic` | Core — `html()`, `setProductionAssets()`, `getProductionAssets()`, `registerHtmlExtractor()` |
 | `atollic/vite` | Vite plugin |
 | `atollic/client` | Client runtime (auto-imported) |
 | `atollic/adapter` | `FrameworkAdapter` type |

@@ -747,8 +747,6 @@ declare global {
 
 		interface IntrinsicAttributes {}
 
-		type Component<T = {}> = (
-			props: T & { children?: Children },
-		) => Element;
+		type Component<T = {}> = (props: T & { children?: Children }) => Element;
 	}
 }

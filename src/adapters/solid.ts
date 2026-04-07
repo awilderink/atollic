@@ -84,5 +84,20 @@ export function renderIsland(el, Component, props) {
 
 		hydrationScript:
 			"<script>(self._$HY||(self._$HY={events:[],completed:new WeakSet,r:{}}))</script>",
+
+		extractHtml: `(value) => {
+  if (value && typeof value === "object" && "t" in value && typeof value.t === "string") {
+    return value.t;
+  }
+  if (Array.isArray(value)) {
+    const html = value.flat(Infinity).map((item) => {
+      if (typeof item === "string") return item;
+      if (item && typeof item === "object" && "t" in item) return item.t;
+      return "";
+    }).join("");
+    return html || null;
+  }
+  return null;
+}`,
 	};
 }

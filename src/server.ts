@@ -4,6 +4,9 @@
 
 import { ensureDoctype } from "./shared.js";
 
+export type { HtmlExtractor } from "./shared.js";
+export { registerHtmlExtractor } from "./shared.js";
+
 // ---------------------------------------------------------------------------
 // Production asset injection
 // ---------------------------------------------------------------------------
