@@ -1,6 +1,6 @@
 {
 	"name": "atollic",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"description": "Island architecture for WinterCG-compatible runtimes. Bring-your-own server (Elysia, Hono, …) and UI framework, powered by Vite.",
 	"keywords": [
 		"wintercg",
