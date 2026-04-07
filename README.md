@@ -1,5 +1,10 @@
 # atollic
 
+[![npm version](https://img.shields.io/npm/v/atollic.svg)](https://www.npmjs.com/package/atollic)
+[![CI](https://github.com/awilderink/atollic/actions/workflows/ci.yml/badge.svg)](https://github.com/awilderink/atollic/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/npm/l/atollic.svg)](./LICENSE)
+[![Bundle size](https://img.shields.io/bundlephobia/minzip/atollic)](https://bundlephobia.com/package/atollic)
+
 Island architecture for WinterCG-compatible runtimes. Bring your own server (Elysia, Hono, …) and your own UI framework, powered by Vite.
 
 > **Status: experimental.** atollic is pre-1.0 (`v0.0.x`). The API may change between minor versions until 1.0.
