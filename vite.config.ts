@@ -47,6 +47,7 @@ export default defineConfig({
 				head: "src/head.tsx",
 				adapter: "src/adapter.ts",
 				"adapters/solid": "src/adapters/solid.ts",
+				"adapters/react": "src/adapters/react.ts",
 				"servers/elysia": "src/servers/elysia.ts",
 				"servers/hono": "src/servers/hono.ts",
 				"html/jsx-runtime": "src/html/jsx-runtime.ts",

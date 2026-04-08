@@ -39,10 +39,29 @@ const RAW_ISLAND_QUERY = "?raw-island";
 
 /** Matches .ts, .tsx, .js, .jsx */
 const ALL_SCRIPT_RE = /\.[jt]sx?$/;
-/** Matches only .tsx, .jsx (island-capable files) */
-const JSX_ONLY_RE = /\.[jt]sx$/;
+/** Matches only .tsx, .jsx (island-capable files), optionally with a query string */
+const JSX_ONLY_RE = /\.[jt]sx(\?.*)?$/;
 /** Matches CSS files */
 const CSS_RE = /\.css($|\?)/;
+/** Captures the package name from `@jsxImportSource <pkg>` */
+const JSX_PRAGMA_RE = /@jsxImportSource\s+(\S+)/;
+
+/**
+ * Find the first adapter whose `jsxImportSources` (or `name` as a fallback)
+ * matches the file's `@jsxImportSource` pragma. Returns `undefined` if the
+ * file has no pragma or no adapter claims the source.
+ */
+function matchAdapterByPragma(
+	code: string,
+	adapters: FrameworkAdapter[],
+): FrameworkAdapter | undefined {
+	const match = code.match(JSX_PRAGMA_RE);
+	if (!match) return undefined;
+	const source = match[1];
+	return adapters.find((a) =>
+		(a.jsxImportSources ?? [a.name]).includes(source),
+	);
+}
 
 // ---------------------------------------------------------------------------
 // Directive parsing
@@ -288,12 +307,22 @@ export function atollic(options: AtollicOptions): Plugin[] {
 	let islandsScanned = false;
 	let cachedCssUrls: Set<string> | null = null;
 
-	/** Resolve which adapter handles a directive. */
+	/**
+	 * Resolve which adapter handles an island file. Order:
+	 * 1. Explicit `"use client:foo"` framework name
+	 * 2. `@jsxImportSource` pragma (when `content` is provided)
+	 * 3. Default adapter (first in the `frameworks` array)
+	 */
 	function resolveAdapter(
 		frameworkName: string | undefined,
+		content?: string,
 	): FrameworkAdapter | undefined {
-		if (!frameworkName) return defaultAdapter;
-		return adapters.find((a) => a.name === frameworkName);
+		if (frameworkName) return adapters.find((a) => a.name === frameworkName);
+		if (content) {
+			const matched = matchAdapterByPragma(content, adapters);
+			if (matched) return matched;
+		}
+		return defaultAdapter;
 	}
 
 	/** Invalidate the virtual client entry so it gets regenerated. */
@@ -435,7 +464,7 @@ export function atollic(options: AtollicOptions): Plugin[] {
 				const directive = parseUseClientDirective(content);
 				if (directive.hasDirective) {
 					if (JSX_ONLY_RE.test(file)) {
-						const adapter = resolveAdapter(directive.framework);
+						const adapter = resolveAdapter(directive.framework, content);
 						if (adapter) {
 							registerFileIslands(file, content, adapter);
 						} else if (directive.framework) {
@@ -452,21 +481,6 @@ export function atollic(options: AtollicOptions): Plugin[] {
 				}
 			}
 
-			// Glob scan: discover islands inside root
-			for await (const entry of glob("**/*.{ts,tsx,js,jsx}", {
-				cwd: root,
-				exclude: ["node_modules/**", "dist/**"],
-			})) {
-				const absPath = resolve(root, entry);
-				visited.add(absPath);
-				try {
-					processFile(absPath, await readFile(absPath, "utf-8"));
-				} catch {
-					// File read failed, skip
-				}
-			}
-
-			// Follow imports from entry to discover islands outside root
 			async function scanImports(file: string) {
 				if (visited.has(file)) return;
 				visited.add(file);
@@ -503,6 +517,17 @@ export function atollic(options: AtollicOptions): Plugin[] {
 				}
 			}
 
+			// Glob scan: discover (and follow imports of) every script in root.
+			// Catches islands not reachable from the entry, plus any external
+			// components imported transitively.
+			for await (const entry of glob("**/*.{ts,tsx,js,jsx}", {
+				cwd: root,
+				exclude: ["node_modules/**", "dist/**"],
+			})) {
+				await scanImports(resolve(root, entry));
+			}
+
+			// Also start from the entry in case it lives outside root.
 			await scanImports(resolvedEntry);
 		},
 
@@ -600,7 +625,7 @@ console.log(\`Listening on http://localhost:\${port}\`);
 						return "export default {};";
 					}
 
-					const adapter = resolveAdapter(directive.framework);
+					const adapter = resolveAdapter(directive.framework, content);
 					if (!adapter) {
 						if (directive.framework) {
 							console.warn(
@@ -746,38 +771,61 @@ console.log(\`Listening on http://localhost:\${port}\`);
 		},
 	};
 
-	// Pre-transform plugin: compile non-framework JSX before framework plugins
-	// see it. This lets us skip the `include` option on framework plugins —
-	// files without a framework pragma get transformed here via esbuild, so
-	// framework transforms (e.g. vite-plugin-solid) find no JSX left.
-	const jsxPragmaRe = /@jsxImportSource\s+(\S+)/;
+	// Compile non-framework JSX with the atollic runtime so framework plugins
+	// (e.g. vite-plugin-solid) don't need their own `include` filter — files
+	// they care about still carry an `@jsxImportSource` pragma and reach them
+	// untransformed.
 	const preTransformPlugin: Plugin = {
 		name: "atollic:jsx-pre-transform",
 		enforce: "pre",
 		async transform(code, id) {
-			if (!/\.[jt]sx$/.test(id)) return;
-			// If file has a framework pragma, let that framework's plugin handle it
-			const match = code.match(jsxPragmaRe);
-			if (match) {
-				const source = match[1];
-				// Check if any adapter owns this import source (e.g. "solid-js")
-				for (const adapter of adapters) {
-					if (source.includes(adapter.name)) return;
-				}
-			}
-			// No framework pragma — pre-compile JSX with esbuild using our runtime
-			const result = await (transformWithOxc as any)(code, id, {
+			if (!JSX_ONLY_RE.test(id)) return;
+			if (matchAdapterByPragma(code, adapters)) return;
+			const result = await transformWithOxc(code, id, {
 				jsx: { runtime: "automatic", importSource: "atollic" },
 			});
 			return { code: result.code, map: result.map };
 		},
 	};
 
-	// Gather all framework Vite plugins
+	/**
+	 * Wrap a framework plugin's `transform` so it only runs on files whose
+	 * `@jsxImportSource` matches the adapter. Without this, both
+	 * `vite-plugin-solid` and `@vitejs/plugin-react` race to transform every
+	 * `.tsx` file in the project and the first one wins, breaking the others.
+	 */
+	function wrapFrameworkPlugin(
+		plugin: Plugin,
+		adapter: FrameworkAdapter,
+	): Plugin {
+		const orig = plugin.transform;
+		if (!orig) return plugin;
+
+		const origHandler = typeof orig === "function" ? orig : orig.handler;
+		const origMeta = typeof orig === "function" ? {} : orig;
+		const adapterSources = adapter.jsxImportSources ?? [adapter.name];
+
+		const wrapped: typeof orig = {
+			...origMeta,
+			handler(code, id, options) {
+				if (JSX_ONLY_RE.test(id)) {
+					const match = code.match(JSX_PRAGMA_RE);
+					if (match && !adapterSources.includes(match[1])) return;
+				}
+				return origHandler.call(this, code, id, options);
+			},
+		};
+
+		return { ...plugin, transform: wrapped };
+	}
+
+	// Gather all framework Vite plugins (each wrapped with a pragma filter)
 	const frameworkPlugins: Plugin[] = [];
 	for (const adapter of adapters) {
 		if (adapter.plugins) {
-			frameworkPlugins.push(...adapter.plugins());
+			for (const p of adapter.plugins()) {
+				frameworkPlugins.push(wrapFrameworkPlugin(p, adapter));
+			}
 		}
 	}
 
