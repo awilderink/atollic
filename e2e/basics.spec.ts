@@ -3,37 +3,39 @@ import { expect, test } from "@playwright/test";
 test.describe("Basics", () => {
 	test("Solid counter SSR content present before hydration", async ({ page }) => {
 		await page.goto("/basics");
-		// The count strong tag exists in the SSR HTML
-		const count = page.getByTestId("solid-count");
-		await expect(count).toBeAttached();
-		await expect(count).toHaveText("0");
+		const section = page.getByTestId("solid-counter-section");
+		await expect(section.getByTestId("solid-count")).toBeAttached();
+		await expect(section.getByTestId("solid-count")).toHaveText("0");
 	});
 
 	test("Solid counter increments on click", async ({ page }) => {
 		await page.goto("/basics");
-		await page.getByTestId("solid-inc").first().click();
-		await expect(page.getByTestId("solid-count").first()).toHaveText("1");
+		const section = page.getByTestId("solid-counter-section");
+		await section.getByTestId("solid-inc").click();
+		await expect(section.getByTestId("solid-count")).toHaveText("1");
 	});
 
 	test("Solid counter decrements on click", async ({ page }) => {
 		await page.goto("/basics");
-		await page.getByTestId("solid-inc").first().click();
-		await page.getByTestId("solid-inc").first().click();
-		await page.getByTestId("solid-dec").first().click();
-		await expect(page.getByTestId("solid-count").first()).toHaveText("1");
+		const section = page.getByTestId("solid-counter-section");
+		await section.getByTestId("solid-inc").click();
+		await section.getByTestId("solid-inc").click();
+		await section.getByTestId("solid-dec").click();
+		await expect(section.getByTestId("solid-count")).toHaveText("1");
 	});
 
 	test("React counter SSR content present before hydration", async ({ page }) => {
 		await page.goto("/basics");
-		const count = page.getByTestId("react-count");
-		await expect(count).toBeAttached();
-		await expect(count).toHaveText("0");
+		const section = page.getByTestId("react-counter-section");
+		await expect(section.getByTestId("react-count")).toBeAttached();
+		await expect(section.getByTestId("react-count")).toHaveText("0");
 	});
 
 	test("React counter increments on click", async ({ page }) => {
 		await page.goto("/basics");
-		await page.getByTestId("react-inc").click();
-		await expect(page.getByTestId("react-count")).toHaveText("1");
+		const section = page.getByTestId("react-counter-section");
+		await section.getByTestId("react-inc").click();
+		await expect(section.getByTestId("react-count")).toHaveText("1");
 	});
 
 	test("Solid no-prop island renders without props", async ({ page }) => {
@@ -50,9 +52,6 @@ test.describe("Basics", () => {
 
 	test("two Solid counters are independent", async ({ page }) => {
 		await page.goto("/basics");
-		const counters = page.getByTestId("solid-count");
-		const incs = page.getByTestId("solid-inc");
-		// Click the first counter's + button (inside counter-a section)
 		await page.getByTestId("counter-a").getByTestId("solid-inc").click();
 		await expect(page.getByTestId("counter-a").getByTestId("solid-count")).toHaveText("1");
 		await expect(page.getByTestId("counter-b").getByTestId("solid-count")).toHaveText("0");

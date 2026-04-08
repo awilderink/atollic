@@ -7,12 +7,12 @@ import { jsx } from "./html/jsx-runtime.js";
 // ---------------------------------------------------------------------------
 
 /** Extract and eval __ix_unwrap from a generated stub string. */
-function extractUnwrap(code: string): (v: unknown) => string {
-	const start = code.indexOf("function __ix_unwrap(v)");
+function extractUnwrap(code: string): (v: unknown) => Promise<string> {
+	const start = code.indexOf("async function __ix_unwrap(v)");
 	// Slice from function start to just before the first export declaration
 	const exportPos = code.indexOf("\nexport ", start);
 	const block = code.slice(start, exportPos > -1 ? exportPos : code.length);
-	return new Function(`${block}; return __ix_unwrap;`)() as (v: unknown) => string;
+	return new Function(`${block}; return __ix_unwrap;`)() as (v: unknown) => Promise<string>;
 }
 
 /** Extract and eval __ix_solidHtml from a generated Solid stub string. */
@@ -67,13 +67,13 @@ describe("buildSsrStub output shape", () => {
 	});
 
 	test("default export uses correct declaration", () => {
-		expect(minimalStub()).toContain("export default function(props)");
+		expect(minimalStub()).toContain("export default async function(props)");
 	});
 
 	test("named export uses correct declaration", () => {
 		const code = minimalStub(namedExports);
-		expect(code).toContain("export default function(props)");
-		expect(code).toContain("export function IslandB(props)");
+		expect(code).toContain("export default async function(props)");
+		expect(code).toContain("export async function IslandB(props)");
 	});
 
 	test("imports the raw component with the provided path", () => {
@@ -98,17 +98,18 @@ describe("buildSsrStub output shape", () => {
 describe("__ix_unwrap behavior", () => {
 	const unwrap = extractUnwrap(minimalStub());
 
-	test("null → empty string", () => expect(unwrap(null)).toBe(""));
-	test("undefined → empty string", () => expect(unwrap(undefined)).toBe(""));
-	test("false → empty string", () => expect(unwrap(false)).toBe(""));
-	test("true → empty string", () => expect(unwrap(true)).toBe(""));
-	test("string passthrough", () => expect(unwrap("hello")).toBe("hello"));
-	test("number → string", () => expect(unwrap(42)).toBe("42"));
-	test("zero → string", () => expect(unwrap(0)).toBe("0"));
-	test("flat array joined", () => expect(unwrap(["a", "b", "c"])).toBe("abc"));
-	test("nested array flattened", () => expect(unwrap(["a", ["b", "c"]])).toBe("abc"));
-	test("array with nulls skips them", () => expect(unwrap([null, "x", false, "y"])).toBe("xy"));
-	test("array with numbers", () => expect(unwrap([1, 2, 3])).toBe("123"));
+	test("null → empty string", async () => expect(await unwrap(null)).toBe(""));
+	test("undefined → empty string", async () => expect(await unwrap(undefined)).toBe(""));
+	test("false → empty string", async () => expect(await unwrap(false)).toBe(""));
+	test("true → empty string", async () => expect(await unwrap(true)).toBe(""));
+	test("string passthrough", async () => expect(await unwrap("hello")).toBe("hello"));
+	test("number → string", async () => expect(await unwrap(42)).toBe("42"));
+	test("zero → string", async () => expect(await unwrap(0)).toBe("0"));
+	test("flat array joined", async () => expect(await unwrap(["a", "b", "c"])).toBe("abc"));
+	test("nested array flattened", async () => expect(await unwrap(["a", ["b", "c"]])).toBe("abc"));
+	test("array with nulls skips them", async () => expect(await unwrap([null, "x", false, "y"])).toBe("xy"));
+	test("array with numbers", async () => expect(await unwrap([1, 2, 3])).toBe("123"));
+	test("resolved promise passthrough", async () => expect(await unwrap(Promise.resolve("async"))).toBe("async"));
 });
 
 // ---------------------------------------------------------------------------
@@ -195,55 +196,55 @@ describe("props JSON round-trip in generated stub", () => {
 	// Strip import lines so the code is self-contained, then eval it
 	const runnable = code
 		.replace(/^import .+;\n/gm, "")
-		.replace(/^export default function/m, "function __stub_default")
-		.replace(/^export function (\w+)/gm, "function $1");
+		.replace(/^export default async function/m, "async function __stub_default")
+		.replace(/^export async function (\w+)/gm, "async function $1");
 
 	const fn = new Function(`${runnable}; return __stub_default;`)() as (props: Record<string, unknown>) => string;
 
-	test("string prop round-trips", () => {
-		const html = fn({ message: "hello world" });
+	test("string prop round-trips", async () => {
+		const html = await fn({ message: "hello world" });
 		expect(html).toContain('"message":"hello world"');
 	});
 
-	test("number prop round-trips", () => {
-		const html = fn({ count: 42 });
+	test("number prop round-trips", async () => {
+		const html = await fn({ count: 42 });
 		expect(html).toContain('"count":42');
 	});
 
-	test("boolean prop round-trips", () => {
-		const html = fn({ flag: true });
+	test("boolean prop round-trips", async () => {
+		const html = await fn({ flag: true });
 		expect(html).toContain('"flag":true');
 	});
 
-	test("null prop round-trips", () => {
-		const html = fn({ val: null });
+	test("null prop round-trips", async () => {
+		const html = await fn({ val: null });
 		expect(html).toContain('"val":null');
 	});
 
-	test("array prop round-trips", () => {
-		const html = fn({ items: ["a", "b"] });
+	test("array prop round-trips", async () => {
+		const html = await fn({ items: ["a", "b"] });
 		expect(html).toContain('"items":["a","b"]');
 	});
 
-	test("nested object prop round-trips", () => {
-		const html = fn({ obj: { x: 1 } });
+	test("nested object prop round-trips", async () => {
+		const html = await fn({ obj: { x: 1 } });
 		expect(html).toContain('"obj":{"x":1}');
 	});
 
-	test("children are excluded from propsJson", () => {
-		const html = fn({ label: "test", children: "<p>server html</p>" });
+	test("children are excluded from propsJson", async () => {
+		const html = await fn({ label: "test", children: "<p>server html</p>" });
 		expect(html).not.toContain('"children"');
 		expect(html).toContain('"label":"test"');
 	});
 
-	test("island wrapper uses correct island name in data-island", () => {
-		const html = fn({});
+	test("island wrapper uses correct island name in data-island", async () => {
+		const html = await fn({});
 		expect(html).toContain('data-island="RoundTrip"');
 	});
 
-	test("each call produces a unique incrementing id", () => {
-		const h1 = fn({});
-		const h2 = fn({});
+	test("each call produces a unique incrementing id", async () => {
+		const h1 = await fn({});
+		const h2 = await fn({});
 		const id1 = h1.match(/id="(ix-RoundTrip-\d+)"/)?.[1];
 		const id2 = h2.match(/id="(ix-RoundTrip-\d+)"/)?.[1];
 		expect(id1).toBeTruthy();

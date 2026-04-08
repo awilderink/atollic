@@ -106,6 +106,13 @@ export interface SsrStubOptions {
 	 * framework's SSR.
 	 */
 	renderExpr(rawName: string, idVar: string, propsVar: string): string;
+	/**
+	 * When true, the serialized children HTML is included in propsJson under
+	 * `__atollic_children__` so the client runtime can reconstruct children
+	 * after hydration. Required for frameworks (e.g. React) whose hydration
+	 * reconciles children away when the prop is absent client-side.
+	 */
+	serializeChildren?: boolean;
 }
 
 /**
@@ -117,7 +124,7 @@ export interface SsrStubOptions {
 export function buildSsrStub(
 	rawImportPath: string,
 	fileExports: IslandExport[],
-	{ framework, imports, renderExpr }: SsrStubOptions,
+	{ framework, imports, renderExpr, serializeChildren }: SsrStubOptions,
 ): string {
 	const defaultExport = fileExports.find((e) => e.exportName === "default");
 	const namedExports = fileExports.filter((e) => e.exportName !== "default");
@@ -138,11 +145,15 @@ export function buildSsrStub(
 	// strings, numbers, or (possibly nested) arrays thereof. Flatten into
 	// a single HTML string so the sentinel substitution below has something
 	// to splice in.
-	code += `function __ix_unwrap(v) {
+	// async so that Promise children (async server components used as children)
+	// are awaited before sentinel substitution rather than stringified as
+	// "[object Promise]".
+	code += `async function __ix_unwrap(v) {
+  if (v instanceof Promise) return __ix_unwrap(await v);
   if (v == null || v === false || v === true) return "";
   if (typeof v === "string") return v;
   if (typeof v === "number") return String(v);
-  if (Array.isArray(v)) return v.map(__ix_unwrap).join("");
+  if (Array.isArray(v)) return (await Promise.all(v.map(__ix_unwrap))).join("");
   return String(v);
 }\n`;
 
@@ -150,17 +161,19 @@ export function buildSsrStub(
 		const isDefault = exp.exportName === "default";
 		const rawName = isDefault ? "__raw_default" : `__raw_${exp.exportName}`;
 		const decl = isDefault
-			? "export default function"
-			: `export function ${exp.exportName}`;
+			? "export default async function"
+			: `export async function ${exp.exportName}`;
 
 		// Children are pre-rendered HTML from atollic's JSX runtime, but Solid
 		// and React escape string children on SSR. Swap them for an
 		// escape-safe sentinel, render, then splice the real HTML back in.
+		// The stub is async so that Promise children (async server components)
+		// are awaited before the sentinel substitution.
 		code += `${decl}(props) {
   const id = "ix-${exp.islandName}-" + __ix_idx++;
   const { children: __ix_children, ...jsonProps } = props;
-  const propsJson = JSON.stringify(jsonProps);
-  const __ix_rawChildren = __ix_unwrap(__ix_children);
+  const __ix_rawChildren = await __ix_unwrap(__ix_children);
+  const propsJson = JSON.stringify(${serializeChildren ? `__ix_rawChildren ? { ...jsonProps, __atollic_children__: __ix_rawChildren } : jsonProps` : "jsonProps"});
   const __ix_sentinel = __ix_rawChildren ? "__atollic_children_" + id + "__" : null;
   const __ix_props = __ix_sentinel
     ? { ...jsonProps, children: __ix_sentinel }

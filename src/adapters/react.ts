@@ -24,6 +24,7 @@ export function react(): FrameworkAdapter {
 import { createElement } from "react";`,
 				renderExpr: (rawName, _id, propsVar) =>
 					`renderToString(createElement(${rawName}, ${propsVar}))`,
+				serializeChildren: true,
 			});
 		},
 
@@ -31,15 +32,24 @@ import { createElement } from "react";`,
 import { hydrateRoot, createRoot } from "react-dom/client";
 import { createElement } from "react";
 
+function resolveProps(props) {
+  const { __atollic_children__: rawHtml, ...rest } = props;
+  if (!rawHtml) return rest;
+  return { ...rest, children: createElement("div", {
+    dangerouslySetInnerHTML: { __html: rawHtml },
+    style: { display: "contents" },
+  }) };
+}
+
 export function hydrateIsland(el, Component, props) {
-  const root = hydrateRoot(el, createElement(Component, props));
+  const root = hydrateRoot(el, createElement(Component, resolveProps(props)));
   return () => root.unmount();
 }
 
 export function renderIsland(el, Component, props) {
   el.textContent = "";
   const root = createRoot(el);
-  root.render(createElement(Component, props));
+  root.render(createElement(Component, resolveProps(props)));
   return () => root.unmount();
 }
 `,

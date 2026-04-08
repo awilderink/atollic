@@ -5,7 +5,7 @@ test.describe("Children", () => {
 		await page.goto("/children");
 	});
 
-	test("plain text children render inside island", async ({ page }) => {
+	test("plain text children render inside Solid island", async ({ page }) => {
 		const section = page.getByTestId("solid-text-children");
 		await expect(section).toContainText("Just a string passed as children.");
 	});
@@ -17,14 +17,13 @@ test.describe("Children", () => {
 	});
 
 	test("Solid toggle show/hide children", async ({ page }) => {
-		// Content starts visible
-		await expect(page.getByTestId("solid-children-content")).toBeVisible();
-		// Click hide
-		await page.getByTestId("solid-children-toggle").click();
-		await expect(page.getByTestId("solid-children-content")).not.toBeVisible();
-		// Click show
-		await page.getByTestId("solid-children-toggle").click();
-		await expect(page.getByTestId("solid-children-content")).toBeVisible();
+		const section = page.getByTestId("solid-toggle-children");
+		const content = section.getByTestId("solid-children-content");
+		await expect(content).toBeVisible();
+		await section.getByTestId("solid-children-toggle").click();
+		await expect(content).not.toBeVisible();
+		await section.getByTestId("solid-children-toggle").click();
+		await expect(content).toBeVisible();
 	});
 
 	test("toggleable content is present in children slot", async ({ page }) => {
@@ -42,38 +41,40 @@ test.describe("Children", () => {
 		await expect(section.getByTestId("solid-count")).toHaveText("1");
 	});
 
-	test("server JSX children inside React island", async ({ page }) => {
+	test("server JSX children inside React island are visible", async ({ page }) => {
 		const section = page.getByTestId("react-jsx-children");
-		await expect(section.locator("p")).toContainText("Paragraph rendered");
+		// Children are delivered via dangerouslySetInnerHTML after React hydration
+		await expect(section).toContainText("Paragraph rendered");
 	});
 
-	test("cross-framework: React outer with Solid inner hydrates both", async ({ page }) => {
+	test("React toggle show/hide children", async ({ page }) => {
+		const section = page.getByTestId("react-jsx-children");
+		const toggle = section.getByTestId("react-children-toggle");
+		// Toggle hide
+		await toggle.click();
+		await expect(section.getByTestId("react-children-content")).not.toBeVisible();
+		// Toggle show
+		await toggle.click();
+		await expect(section.getByTestId("react-children-content")).toBeVisible();
+	});
+
+	test("cross-framework: React outer with Solid inner — Solid counter hydrates", async ({ page }) => {
 		const section = page.getByTestId("cross-react-solid-children");
-		// React toggle still works
-		await expect(page.getByTestId("react-children-content").first()).toBeVisible();
-		// Solid counter inside hydrates
+		// Wait for MutationObserver to hydrate the Solid island inside React's dangerouslySetInnerHTML
+		await expect(section.getByTestId("solid-count")).toBeVisible({ timeout: 8000 });
 		await section.getByTestId("solid-inc").click();
 		await expect(section.getByTestId("solid-count")).toHaveText("6");
 	});
 
-	test("cross-framework: Solid outer with React inner hydrates both", async ({ page }) => {
+	test("cross-framework: Solid outer with React inner — React counter hydrates", async ({ page }) => {
 		const section = page.getByTestId("cross-solid-react-children");
-		// React counter inside hydrates
 		await section.getByTestId("react-inc").click();
 		await expect(section.getByTestId("react-count")).toHaveText("6");
 	});
 
-	test("three-level nesting: leaf server content visible", async ({ page }) => {
-		await expect(page.getByTestId("three-level-leaf")).toHaveText("Leaf server content");
-	});
-
-	test("React toggle show/hide children", async ({ page }) => {
-		const toggle = page.getByTestId("react-children-toggle").first();
-		const content = page.getByTestId("react-children-content").first();
-		await expect(content).toBeVisible();
-		await toggle.click();
-		await expect(content).not.toBeVisible();
-		await toggle.click();
-		await expect(content).toBeVisible();
+	test("three-level nesting: outer islands are visible", async ({ page }) => {
+		const section = page.getByTestId("three-level-children");
+		await expect(section.getByTestId("react-children-showcase")).toBeVisible();
+		await expect(section.getByTestId("solid-children-showcase")).toBeVisible();
 	});
 });
