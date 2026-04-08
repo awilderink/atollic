@@ -153,13 +153,13 @@ export function buildSsrStub(
 			? "export default function"
 			: `export function ${exp.exportName}`;
 
+		// Children are pre-rendered HTML from atollic's JSX runtime, but Solid
+		// and React escape string children on SSR. Swap them for an
+		// escape-safe sentinel, render, then splice the real HTML back in.
 		code += `${decl}(props) {
   const id = "ix-${exp.islandName}-" + __ix_idx++;
   const { children: __ix_children, ...jsonProps } = props;
   const propsJson = JSON.stringify(jsonProps);
-  // Children are pre-rendered HTML from atollic's JSX runtime, but Solid and
-  // React escape string children — swap for an escape-safe sentinel, render,
-  // then splice the real HTML back in.
   const __ix_rawChildren = __ix_unwrap(__ix_children);
   const __ix_sentinel = __ix_rawChildren ? "__atollic_children_" + id + "__" : null;
   const __ix_props = __ix_sentinel
