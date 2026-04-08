@@ -100,10 +100,12 @@ export interface SsrStubOptions {
 	imports: string;
 	/**
 	 * Returns the JS expression that produces the rendered HTML string for
-	 * one island. Receives the local name of the imported component and the
-	 * JS variable holding the per-instance render id.
+	 * one island. Receives the local name of the imported component, the
+	 * JS variable holding the per-instance render id, and the variable name
+	 * that holds the (possibly children-substituted) props to pass into the
+	 * framework's SSR.
 	 */
-	renderExpr(rawName: string, idVar: string): string;
+	renderExpr(rawName: string, idVar: string, propsVar: string): string;
 }
 
 /**
@@ -132,6 +134,17 @@ export function buildSsrStub(
 	let code = `${imports}\n`;
 	code += `import ${importParts.join(", ")} from "${rawImportPath}";\n`;
 	code += `let __ix_idx = 0;\n`;
+	// Children arrive as pre-rendered HTML from atollic's JSX runtime:
+	// strings, numbers, or (possibly nested) arrays thereof. Flatten into
+	// a single HTML string so the sentinel substitution below has something
+	// to splice in.
+	code += `function __ix_unwrap(v) {
+  if (v == null || v === false || v === true) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "number") return String(v);
+  if (Array.isArray(v)) return v.map(__ix_unwrap).join("");
+  return String(v);
+}\n`;
 
 	for (const exp of fileExports) {
 		const isDefault = exp.exportName === "default";
@@ -140,13 +153,24 @@ export function buildSsrStub(
 			? "export default function"
 			: `export function ${exp.exportName}`;
 
+		// Children are pre-rendered HTML from atollic's JSX runtime, but Solid
+		// and React escape string children on SSR. Swap them for an
+		// escape-safe sentinel, render, then splice the real HTML back in.
 		code += `${decl}(props) {
   const id = "ix-${exp.islandName}-" + __ix_idx++;
-  const { children: __children, ...jsonProps } = props;
+  const { children: __ix_children, ...jsonProps } = props;
   const propsJson = JSON.stringify(jsonProps);
-  const html = ${renderExpr(rawName, "id")};
+  const __ix_rawChildren = __ix_unwrap(__ix_children);
+  const __ix_sentinel = __ix_rawChildren ? "__atollic_children_" + id + "__" : null;
+  const __ix_props = __ix_sentinel
+    ? { ...jsonProps, children: __ix_sentinel }
+    : props;
+  let __ix_html = ${renderExpr(rawName, "id", "__ix_props")};
+  if (__ix_sentinel) {
+    __ix_html = __ix_html.split(__ix_sentinel).join(__ix_rawChildren);
+  }
   return '<div data-island="${exp.islandName}" data-framework="${framework}" id="' + id + '">'
-    + html + '<script type="application/json">' + propsJson + '</script></div>';
+    + __ix_html + '<script type="application/json">' + propsJson + '</script></div>';
 }\n`;
 	}
 

@@ -20,10 +20,14 @@ export function solid(): FrameworkAdapter {
 		ssrStub(rawImportPath, fileExports) {
 			return buildSsrStub(rawImportPath, fileExports, {
 				framework: "solid",
+				// Solid's renderToString with renderId returns `{ t: string }`;
+				// without renderId it returns a plain string. Handle both.
 				imports: `import { renderToString } from "solid-js/web";
-function __unwrap(v) { return v && typeof v === "object" && "t" in v ? v.t : String(v); }`,
-				renderExpr: (rawName, id) =>
-					`__unwrap(renderToString(() => ${rawName}(props), { renderId: ${id} }))`,
+function __ix_solidHtml(v) {
+  return typeof v === "string" ? v : v && typeof v.t === "string" ? v.t : "";
+}`,
+				renderExpr: (rawName, id, propsVar) =>
+					`__ix_solidHtml(renderToString(() => ${rawName}(${propsVar}), { renderId: ${id} }))`,
 			});
 		},
 

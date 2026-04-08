@@ -14,7 +14,7 @@ Island architecture for WinterCG-compatible runtimes. Bring your own server (Ely
 > **Status: experimental.** Atollic is pre-1.0 (`v0.0.x`). The API may change between minor versions until 1.0.
 
 - **Server-agnostic** — any WinterCG runtime that speaks `Request`/`Response` (Elysia, Hono, Bun, Node via adapter, Workers, …).
-- **UI-framework-agnostic** — ships with a Solid.js adapter; Preact / React / others pluggable via `FrameworkAdapter`.
+- **UI-framework-agnostic** — ships with Solid and React adapters; Preact and others pluggable via `FrameworkAdapter`. Each island picks its framework via the JSX pragma, so one page can host Solid and React islands side by side.
 - **Zero-JS by default** — pages render to HTML strings on the server; only `"use client"` islands ship JavaScript.
 - **HMR with state preserved** — server changes morph the DOM via idiomorph, keeping mounted islands alive.
 
@@ -176,16 +176,23 @@ Any `.tsx` or `.jsx` file with `"use client"` at the top becomes an island:
    - If SSR content exists: hydrates with matching `renderId` (reuses existing DOM)
    - If empty (dynamically added): falls back to full client-side render
 
-### Framework directive
+### Picking a framework per island
 
-When using multiple UI frameworks, specify which one:
+Atollic selects the adapter for each island from the file's JSX pragma. The `@jsxImportSource` comment at the top of the file tells Atollic (and Vite) which UI framework this island uses:
 
 ```tsx
-"use client:solid"   // Solid.js
-"use client:preact"  // Preact (when adapter exists)
+/** @jsxImportSource solid-js */
+"use client";
+// Rendered and hydrated by the Solid adapter
 ```
 
-Plain `"use client"` uses the first registered framework.
+```tsx
+/** @jsxImportSource react */
+"use client";
+// Rendered and hydrated by the React adapter
+```
+
+Both can coexist in the same project and on the same page. If a file has `"use client"` without a pragma, Atollic uses the first registered framework.
 
 ### Named exports
 
@@ -199,6 +206,40 @@ export function TagCloud(props: { tags: string[] }) { /* ... */ }
 ```
 
 Both are independently hydratable islands.
+
+### Server-rendered children
+
+Islands can accept children that are rendered on the server as plain HTML and then spliced into the island's SSR output. The children stay zero-JS — only the island itself ships hydration code.
+
+```tsx
+// src/app.tsx — server entry
+import Card from "./islands/Card.js";
+import ProductList from "./components/ProductList.js"; // plain server component, no "use client"
+
+<Card title="Featured">
+  <ProductList items={products} />
+</Card>
+```
+
+```tsx
+// src/islands/Card.tsx
+/** @jsxImportSource solid-js */
+"use client";
+
+import { createSignal, type JSX } from "solid-js";
+
+export default function Card(props: { title: string; children: JSX.Element }) {
+  const [open, setOpen] = createSignal(true);
+  return (
+    <section>
+      <button onClick={() => setOpen((v) => !v)}>{props.title}</button>
+      {open() && <div>{props.children}</div>}
+    </section>
+  );
+}
+```
+
+`<ProductList />` renders to HTML on the server using Atollic's JSX runtime. That HTML is injected into the island's SSR output via a sentinel substitution, so the island sees its children as pre-rendered markup rather than re-rendering them through the UI framework. After hydration the island still controls its own interactivity, but the children are just static DOM.
 
 ### Client scripts
 
@@ -431,6 +472,12 @@ Head(): string  // Returns marker for asset injection
 solid(): FrameworkAdapter  // Solid.js framework adapter
 ```
 
+### `atollic/react`
+
+```ts
+react(): FrameworkAdapter  // React framework adapter
+```
+
 ### `atollic/html`
 
 Types for server-side JSX:
@@ -461,6 +508,7 @@ type Component<T = {}> = (
 | `atollic/adapter` | `FrameworkAdapter` type |
 | `atollic/head` | `<Head />` component |
 | `atollic/solid` | Solid.js adapter |
+| `atollic/react` | React adapter |
 | `atollic/elysia` | Elysia server adapter |
 | `atollic/hono` | Hono server adapter |
 | `atollic/jsx-runtime` | Server JSX runtime |
