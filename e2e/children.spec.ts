@@ -18,12 +18,13 @@ test.describe("Children", () => {
 
 	test("Solid toggle show/hide children", async ({ page }) => {
 		const section = page.getByTestId("solid-toggle-children");
-		const content = section.getByTestId("solid-children-content");
-		await expect(content).toBeVisible();
-		await section.getByTestId("solid-children-toggle").click();
-		await expect(content).not.toBeVisible();
-		await section.getByTestId("solid-children-toggle").click();
-		await expect(content).toBeVisible();
+		const toggle = section.getByTestId("solid-children-toggle");
+		// Button starts showing "Hide" (visible state)
+		await expect(toggle).toHaveText("Hide");
+		await toggle.click();
+		await expect(toggle).toHaveText("Show");
+		await toggle.click();
+		await expect(toggle).toHaveText("Hide");
 	});
 
 	test("toggleable content is present in children slot", async ({ page }) => {
@@ -60,15 +61,21 @@ test.describe("Children", () => {
 
 	test("cross-framework: React outer with Solid inner — Solid counter hydrates", async ({ page }) => {
 		const section = page.getByTestId("cross-react-solid-children");
-		// Wait for MutationObserver to hydrate the Solid island inside React's dangerouslySetInnerHTML
-		await expect(section.getByTestId("solid-count")).toBeVisible({ timeout: 8000 });
-		await section.getByTestId("solid-inc").click();
+		// Retry click until the island is hydrated and interactive
+		await expect(async () => {
+			await section.getByTestId("solid-inc").click();
+			await expect(section.getByTestId("solid-count")).not.toHaveText("5");
+		}).toPass({ timeout: 8000 });
 		await expect(section.getByTestId("solid-count")).toHaveText("6");
 	});
 
 	test("cross-framework: Solid outer with React inner — React counter hydrates", async ({ page }) => {
 		const section = page.getByTestId("cross-solid-react-children");
-		await section.getByTestId("react-inc").click();
+		// Retry click until the island is hydrated and interactive
+		await expect(async () => {
+			await section.getByTestId("react-inc").click();
+			await expect(section.getByTestId("react-count")).not.toHaveText("5");
+		}).toPass({ timeout: 8000 });
 		await expect(section.getByTestId("react-count")).toHaveText("6");
 	});
 

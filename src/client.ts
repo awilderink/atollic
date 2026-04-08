@@ -86,6 +86,15 @@ interface MountedIsland {
 
 const mounted = new Map<HTMLElement, MountedIsland>();
 
+/**
+ * Islands present in the DOM before any JS ran. Only these get `hydrateIsland`
+ * so that their SSR-rendered DOM is reused. All dynamically inserted islands
+ * (htmx swaps, MutationObserver, etc.) use `renderIsland` — their hydration
+ * records are not in `_$HY` and `_hydrate` would silently produce a
+ * non-interactive result.
+ */
+const ssrIslands = new Set<HTMLElement>();
+
 /** When true, the MutationObserver skips island mounting (morphPage handles it). */
 let replacing = false;
 
@@ -144,8 +153,10 @@ export async function mountIslands(
 		// Remove the props script before hydrating (not part of component DOM)
 		if (script) script.remove();
 
-		// Check if this island has SSR content (non-empty after removing script)
-		const hasSSR = el.childNodes.length > 0;
+		// Only reuse server-rendered DOM for islands that were present at page
+		// load. Dynamically inserted islands (htmx, MutationObserver, etc.)
+		// always get a fresh render — their `_$HY` hydration records are gone.
+		const hasSSR = ssrIslands.has(el) && el.childNodes.length > 0;
 
 		tasks.push(
 			(async () => {
@@ -154,10 +165,10 @@ export async function mountIslands(
 					const Component = mod.default;
 					let dispose: () => void;
 					if (hasSSR && el.id) {
-						// SSR content present — hydrate to reuse existing DOM
+						// Original SSR island — hydrate to reuse existing DOM
 						dispose = fw.hydrate(el, Component, props, el.id);
 					} else {
-						// No SSR content (dynamically added) — full render
+						// Dynamically added — full render
 						dispose = fw.render(el, Component, props);
 					}
 					mounted.set(el, { dispose, name, props });
@@ -233,6 +244,11 @@ async function morphPage(newHtml: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export function initRuntime(): void {
+	// Record all islands present at page load so hydrateIsland is used for them.
+	for (const el of document.querySelectorAll<HTMLElement>(ISLAND_SELECTOR)) {
+		ssrIslands.add(el);
+	}
+
 	// Mount islands already in the page, then signal readiness
 	mountIslands().then(() => {
 		document.dispatchEvent(new CustomEvent("atollic:ready"));

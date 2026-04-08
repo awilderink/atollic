@@ -373,7 +373,7 @@ const app = new Elysia()
 			</p>
 
 			<div data-testid="state-section" style={section}>
-				<SolidToggle target="demo-panel" label="Show panel" />
+				<SolidToggle target="demo-panel" label="panel" />
 				<SolidPanel
 					id="demo-panel"
 					text="This panel is driven by a shared signal."
