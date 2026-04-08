@@ -22,8 +22,8 @@ export function react(): FrameworkAdapter {
 				framework: "react",
 				imports: `import { renderToString } from "react-dom/server";
 import { createElement } from "react";`,
-				renderExpr: (rawName) =>
-					`renderToString(createElement(${rawName}, props))`,
+				renderExpr: (rawName, _id, propsVar) =>
+					`renderToString(createElement(${rawName}, ${propsVar}))`,
 			});
 		},
 
