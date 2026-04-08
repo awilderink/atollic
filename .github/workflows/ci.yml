@@ -24,7 +24,11 @@ jobs:
       - run: bun install --frozen-lockfile
 
       - name: Check for changeset
-        if: github.event_name == 'pull_request'
+        # Skip on the auto-generated "Version Packages" PR: it deletes every
+        # consumed changeset file, so the gate would always fail on it.
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.user.login != 'github-actions[bot]'
         run: bunx changeset status --since=origin/main
 
       - name: Typecheck
