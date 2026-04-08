@@ -33,7 +33,10 @@
 		"format": "biome format --write .",
 		"lint": "biome lint .",
 		"check": "biome check --write .",
-		"test": "bun test",
+		"test:unit": "bun test src/",
+		"test:e2e": "playwright test",
+		"test:e2e:elysia": "playwright test --project=elysia",
+		"test:e2e:hono": "playwright test --project=hono",
 		"changeset": "changeset",
 		"version": "changeset version",
 		"release": "changeset publish"
@@ -136,6 +139,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.7",
+		"@playwright/test": "^1.49.0",
 		"@changesets/changelog-github": "^0.5.0",
 		"@changesets/cli": "^2.27.10",
 		"@types/node": "^25.5.0",

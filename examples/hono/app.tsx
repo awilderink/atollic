@@ -3,14 +3,40 @@ import { Head } from "../../src/head.js";
 import type { Children } from "../../src/html/types.js";
 import { html } from "../../src/server.js";
 import { atollic } from "../../src/servers/hono.js";
-import Card from "../components/Card.js";
-import Counter from "../components/Counter.js";
-import Panel from "../components/Panel.js";
+
+// Solid islands
+import SolidCard from "../components/SolidCard.js";
+import SolidCounter from "../components/SolidCounter.js";
+import SolidPanel from "../components/SolidPanel.js";
+import SolidThemeCards from "../components/SolidThemeCards.js";
+import SolidTimer from "../components/SolidTimer.js";
+import SolidToggle from "../components/SolidToggle.js";
+import SolidNoPropIsland from "../components/SolidNoPropIsland.js";
+import SolidPropsShowcase from "../components/SolidPropsShowcase.js";
+import SolidChildrenShowcase from "../components/SolidChildrenShowcase.js";
+import SolidIslandA, {
+	SolidIslandB,
+	SolidIslandC,
+} from "../components/SolidNamedExports.js";
+
+// React islands
 import ReactCounter from "../components/ReactCounter.js";
-import Tabs from "../components/Tabs.js";
-import ThemeCards from "../components/ThemeCards.js";
-import Timer from "../components/Timer.js";
-import Toggle from "../components/Toggle.js";
+import ReactNoPropIsland from "../components/ReactNoPropIsland.js";
+import ReactPropsShowcase from "../components/ReactPropsShowcase.js";
+import ReactChildrenShowcase from "../components/ReactChildrenShowcase.js";
+import ReactIslandA, {
+	ReactIslandB,
+	ReactIslandC,
+} from "../components/ReactNamedExports.js";
+import ReactTimer from "../components/ReactTimer.js";
+import ReactContextIsland from "../components/ReactContextIsland.js";
+
+// Client script (discovered by Vite plugin, runs only in browser)
+import "../components/ClientScript.js";
+
+// ---------------------------------------------------------------------------
+// Layout + Nav
+// ---------------------------------------------------------------------------
 
 function Layout({
 	title,
@@ -35,191 +61,496 @@ function Layout({
 				)}
 				<Head />
 			</head>
-			<body>{children}</body>
+			<body style="font-family: system-ui; max-width: 720px; margin: 2rem auto; padding: 0 1rem">
+				{children}
+			</body>
 		</html>
 	);
 }
 
 function Nav() {
+	const links: [string, string][] = [
+		["/basics", "Basics"],
+		["/zero-js", "Zero JS"],
+		["/props", "Props"],
+		["/frameworks", "Frameworks"],
+		["/children", "Children"],
+		["/named-exports", "Named Exports"],
+		["/state", "State"],
+		["/context", "Context"],
+		["/lifecycle", "Lifecycle"],
+		["/htmx", "HTMX"],
+		["/dynamic", "Dynamic"],
+		["/scripts", "Scripts"],
+		["/async", "Async"],
+	];
 	return (
-		<nav style="margin-bottom: 1.5rem">
-			<a href="/" style="margin-right: 1rem">
-				Home
-			</a>
-			<a href="/nested" style="margin-right: 1rem">
-				Nested Islands
-			</a>
-			<a href="/htmx">HTMX</a>
+		<nav style="margin-bottom: 2rem; display: flex; flex-wrap: wrap; gap: 0.5rem">
+			{links.map(([href, label]) => (
+				<a
+					href={href}
+					style="padding: 0.25rem 0.5rem; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: inherit; font-size: 0.875rem"
+				>
+					{label}
+				</a>
+			))}
 		</nav>
 	);
 }
 
-const pageStyle = "max-width: 600px; margin: 2rem auto; font-family: system-ui";
-const sectionStyle =
-	"margin-top: 1.5rem; padding: 1rem; border: 1px solid #ddd; border-radius: 8px";
+const section =
+	"margin-top: 1.5rem; padding: 1rem; border: 1px solid #eee; border-radius: 8px";
+
+// ---------------------------------------------------------------------------
+// Async server component
+// ---------------------------------------------------------------------------
+
+async function AsyncContent() {
+	await new Promise<void>((r) => setTimeout(r, 0));
+	return (
+		<p data-testid="async-content" style="color: #555; margin: 0">
+			Async server content resolved
+		</p>
+	);
+}
+
+// ---------------------------------------------------------------------------
+// Routes
+// ---------------------------------------------------------------------------
 
 const app = new Hono();
 app.use(atollic());
 
-// -- Home -------------------------------------------------------------------
-app.get("/", () =>
+// /basics --------------------------------------------------------------------
+app.get("/basics", () =>
 	html(
-		<Layout title="atollic demo">
-			<main style={pageStyle}>
-				<Nav />
-				<h1>atollic</h1>
-				<p>
-					This paragraph is server-rendered by Hono. The first counter below
-					is a Solid island; the second is a React island. Both are rendered
-					on the server and hydrated by their respective runtimes on the
-					client.
-				</p>
-				<Counter initial={0} />
-				<div style="margin-top: 0.5rem">
-					<ReactCounter initial={0} />
+		<Layout title="Basics">
+			<Nav />
+			<h1>Basics</h1>
+
+			<div data-testid="solid-counter-section" style={section}>
+				<h2>Solid Counter</h2>
+				<SolidCounter initial={0} />
+			</div>
+
+			<div data-testid="solid-noprop-section" style={section}>
+				<h2>Solid — No Props</h2>
+				<SolidNoPropIsland />
+			</div>
+
+			<div data-testid="react-counter-section" style={section}>
+				<h2>React Counter</h2>
+				<ReactCounter initial={0} />
+			</div>
+
+			<div data-testid="react-noprop-section" style={section}>
+				<h2>React — No Props</h2>
+				<ReactNoPropIsland />
+			</div>
+
+			<div data-testid="independence-section" style={section}>
+				<h2>Independence</h2>
+				<p>Two Solid counters — each has its own state.</p>
+				<div data-testid="counter-a">
+					<SolidCounter initial={0} />
 				</div>
-			</main>
+				<div data-testid="counter-b" style="margin-top: 0.5rem">
+					<SolidCounter initial={0} />
+				</div>
+			</div>
 		</Layout>,
 	),
 );
 
-// -- Nested Islands ---------------------------------------------------------
-app.get("/nested", () =>
+// /zero-js -------------------------------------------------------------------
+app.get("/zero-js", () =>
 	html(
-		<Layout title="Nested Islands">
-			<main style={pageStyle}>
-				<Nav />
-				<h1>Nested Islands</h1>
-
-				<div style={sectionStyle}>
-					<h2>Independent islands side by side</h2>
-					<p>Counter and Timer are separate islands on the same page.</p>
-					<Counter initial={5} />
-					<div style="margin-top: 0.5rem">
-						<Timer label="Uptime" />
-					</div>
-				</div>
-
-				<div style={sectionStyle}>
-					<h2>Shared signals across islands</h2>
-					<p>
-						Toggle and Panel are separate islands sharing reactive state via a
-						module-level signal. No context needed — they read the same signal.
-					</p>
-					<Toggle target="demo-panel" label="Details" />
-					<Panel
-						id="demo-panel"
-						text="This panel is controlled by the Toggle island above. Both islands share a reactive signal from a common module."
-					/>
-				</div>
-
-				<div style={sectionStyle}>
-					<h2>Server component wrapping an island</h2>
-					<p>
-						A native {"<details>"} element provides interactivity without JS.
-						The island inside hydrates normally.
-					</p>
-					<details>
-						<summary style="cursor: pointer">Reveal Timer</summary>
-						<div style="margin-top: 0.5rem">
-							<Timer label="Hidden Timer" />
-						</div>
-					</details>
-				</div>
-
-				<div style={sectionStyle}>
-					<h2>Composite island (Tabs)</h2>
-					<p>
-						A single island boundary with multiple interactive pieces inside.
-					</p>
-					<Tabs
-						tabs={[
-							{ label: "About", content: "This is the about tab." },
-							{
-								label: "Settings",
-								content: "Configure your preferences here.",
-							},
-							{ label: "Stats", content: "View your usage statistics." },
-						]}
-					/>
-				</div>
-
-				<div style={sectionStyle}>
-					<h2>Server children → island</h2>
-					<p>
-						The Card island receives server-rendered HTML as children. This
-						tests the server→client boundary for children/slots.
-					</p>
-					<Card title="Server-rendered content">
-						<p>
-							This paragraph was <strong>rendered on the server</strong> and
-							passed as children to the Card island.
-						</p>
-						<ul>
-							<li>Server item 1</li>
-							<li>Server item 2</li>
-							<li>Server item 3</li>
-						</ul>
-					</Card>
-					<Card title="Mixed content">
-						<p>Server text with a nested island below:</p>
-						<Counter initial={99} />
-					</Card>
-				</div>
-
-				<div style={sectionStyle}>
-					<h2>Context within an island</h2>
-					<p>
-						Solid's createContext/useContext works inside a single island
-						boundary. ThemeCards uses a ThemeContext provider — the switch and
-						cards all read from the same context.
-					</p>
-					<ThemeCards cards={["Dashboard", "Profile", "Settings"]} />
-				</div>
-			</main>
+		<Layout title="Zero JS">
+			<Nav />
+			<h1 data-testid="zero-js-heading">Zero JS</h1>
+			<p>No islands on this page. No hydration JavaScript is loaded.</p>
 		</Layout>,
 	),
 );
 
-// -- HTMX -------------------------------------------------------------------
+// /props ---------------------------------------------------------------------
+app.get("/props", () => {
+	const allProps = {
+		plainString: "hello world",
+		htmlString: '<b>bold</b> & "quotes"',
+		xssString: "<script>window.__xss=1</script>",
+		int: 42,
+		float: 3.14,
+		negative: -7,
+		zero: 0,
+		boolTrue: true as const,
+		boolFalse: false as const,
+		nullVal: null,
+		strArray: ["a", "b", "c"],
+		nestedObj: { outer: { inner: "deep" } },
+	};
+	return html(
+		<Layout title="Props">
+			<Nav />
+			<h1>Props</h1>
+
+			<div data-testid="solid-props-section" style={section}>
+				<h2>Solid</h2>
+				<SolidPropsShowcase {...allProps} />
+			</div>
+
+			<div data-testid="react-props-section" style={section}>
+				<h2>React</h2>
+				<ReactPropsShowcase {...allProps} />
+			</div>
+		</Layout>,
+	);
+});
+
+// /frameworks ----------------------------------------------------------------
+app.get("/frameworks", () =>
+	html(
+		<Layout title="Frameworks">
+			<Nav />
+			<h1>Frameworks</h1>
+			<p>Solid and React islands coexist on the same page.</p>
+
+			<div data-testid="solid-framework-section" style={section}>
+				<h2>Solid (initial=10)</h2>
+				<SolidCounter initial={10} />
+			</div>
+
+			<div data-testid="react-framework-section" style={section}>
+				<h2>React (initial=20)</h2>
+				<ReactCounter initial={20} />
+			</div>
+		</Layout>,
+	),
+);
+
+// /children ------------------------------------------------------------------
+app.get("/children", () =>
+	html(
+		<Layout title="Children">
+			<Nav />
+			<h1>Children</h1>
+
+			<div data-testid="solid-text-children" style={section}>
+				<h2>Solid — plain text children</h2>
+				<SolidCard title="Plain text">Just a string passed as children.</SolidCard>
+			</div>
+
+			<div data-testid="solid-jsx-children" style={section}>
+				<h2>Solid — server JSX children</h2>
+				<SolidCard title="Server JSX">
+					<p>
+						Paragraph rendered <strong>on the server</strong>.
+					</p>
+					<ul>
+						<li>Item one</li>
+						<li>Item two</li>
+					</ul>
+				</SolidCard>
+			</div>
+
+			<div data-testid="solid-toggle-children" style={section}>
+				<h2>Solid — conditional children</h2>
+				<SolidChildrenShowcase title="Toggle me">
+					<p data-testid="toggleable-content">This content can be hidden.</p>
+				</SolidChildrenShowcase>
+			</div>
+
+			<div data-testid="solid-async-children" style={section}>
+				<h2>Solid — async server children</h2>
+				<SolidCard title="Async">
+					<AsyncContent />
+				</SolidCard>
+			</div>
+
+			<div data-testid="solid-nested-island-children" style={section}>
+				<h2>Solid — nested island in children</h2>
+				<SolidCard title="Outer card">
+					<SolidCounter initial={0} />
+				</SolidCard>
+			</div>
+
+			<div data-testid="react-jsx-children" style={section}>
+				<h2>React — server JSX children</h2>
+				<ReactChildrenShowcase title="React + server JSX">
+					<p>
+						Paragraph rendered <strong>on the server</strong>.
+					</p>
+				</ReactChildrenShowcase>
+			</div>
+
+			<div data-testid="cross-react-solid-children" style={section}>
+				<h2>Cross-framework — React outer, Solid inner</h2>
+				<ReactChildrenShowcase title="React outer">
+					<SolidCounter initial={5} />
+				</ReactChildrenShowcase>
+			</div>
+
+			<div data-testid="cross-solid-react-children" style={section}>
+				<h2>Cross-framework — Solid outer, React inner</h2>
+				<SolidChildrenShowcase title="Solid outer">
+					<ReactCounter initial={5} />
+				</SolidChildrenShowcase>
+			</div>
+
+			<div data-testid="three-level-children" style={section}>
+				<h2>Three-level nesting</h2>
+				<ReactChildrenShowcase title="React L1">
+					<SolidChildrenShowcase title="Solid L2">
+						<p data-testid="three-level-leaf">Leaf server content</p>
+					</SolidChildrenShowcase>
+				</ReactChildrenShowcase>
+			</div>
+		</Layout>,
+	),
+);
+
+// /named-exports -------------------------------------------------------------
+app.get("/named-exports", () =>
+	html(
+		<Layout title="Named Exports">
+			<Nav />
+			<h1>Named Exports</h1>
+			<p>One file, multiple island exports — each is independently hydratable.</p>
+
+			<div data-testid="solid-named-section" style={section}>
+				<h2>Solid</h2>
+				<SolidIslandA />
+				<SolidIslandB />
+				<SolidIslandC />
+			</div>
+
+			<div data-testid="react-named-section" style={section}>
+				<h2>React</h2>
+				<ReactIslandA />
+				<ReactIslandB />
+				<ReactIslandC />
+			</div>
+		</Layout>,
+	),
+);
+
+// /state ---------------------------------------------------------------------
+app.get("/state", () =>
+	html(
+		<Layout title="State">
+			<Nav />
+			<h1>Cross-island State</h1>
+			<p>
+				Toggle and Panel share a module-level signal — separate island roots, no
+				context provider.
+			</p>
+
+			<div data-testid="state-section" style={section}>
+				<SolidToggle target="demo-panel" label="Show panel" />
+				<SolidPanel
+					id="demo-panel"
+					text="This panel is driven by a shared signal."
+				/>
+			</div>
+
+			<div data-testid="state-second-section" style={section}>
+				<p>A second panel on the same signal:</p>
+				<SolidPanel
+					id="demo-panel-2"
+					text="Second panel — same signal source."
+				/>
+			</div>
+		</Layout>,
+	),
+);
+
+// /context -------------------------------------------------------------------
+app.get("/context", () =>
+	html(
+		<Layout title="Context">
+			<Nav />
+			<h1>Context</h1>
+
+			<div data-testid="solid-context-section" style={section}>
+				<h2>Solid createContext</h2>
+				<SolidThemeCards cards={["Dashboard", "Profile", "Settings"]} />
+			</div>
+
+			<div data-testid="react-context-section" style={section}>
+				<h2>React createContext</h2>
+				<ReactContextIsland cards={["Home", "Reports", "Admin"]} />
+			</div>
+
+			<div data-testid="context-no-leak-section" style={section}>
+				<h2>No context leak across island boundaries</h2>
+				<p>Toggling one does not affect the other.</p>
+				<div data-testid="context-island-1">
+					<SolidThemeCards cards={["Island 1"]} />
+				</div>
+				<div data-testid="context-island-2" style="margin-top: 0.5rem">
+					<SolidThemeCards cards={["Island 2"]} />
+				</div>
+			</div>
+		</Layout>,
+	),
+);
+
+// /lifecycle -----------------------------------------------------------------
+app.get("/lifecycle", () =>
+	html(
+		<Layout title="Lifecycle">
+			<Nav />
+			<h1>Lifecycle</h1>
+
+			<div data-testid="solid-timer-section" style={section}>
+				<h2>Solid — onCleanup</h2>
+				<SolidTimer label="Solid" />
+			</div>
+
+			<div data-testid="react-timer-section" style={section}>
+				<h2>React — useEffect cleanup</h2>
+				<ReactTimer label="React" />
+			</div>
+		</Layout>,
+	),
+);
+
+// /htmx ----------------------------------------------------------------------
 app.get("/htmx", () =>
 	html(
-		<Layout title="HTMX Demo" htmx>
-			<main style={pageStyle}>
-				<Nav />
-				<h1>HTMX + Islands</h1>
-				<p>
-					Click the button to swap in a server-rendered fragment containing a
-					Solid island. The island hydrates automatically after HTMX settles the
-					swap.
-				</p>
-				<button
-					type="button"
-					hx-get="/htmx/fragment"
-					hx-target="#htmx-target"
-					hx-swap="innerHTML"
-					style="padding: 0.5rem 1rem; margin-bottom: 1rem"
-				>
-					Load island via HTMX
-				</button>
-				<div
-					id="htmx-target"
-					style="min-height: 4rem; border: 1px dashed #aaa; border-radius: 8px; padding: 1rem"
-				>
-					<p style="color: #888">Island will appear here...</p>
-				</div>
-			</main>
+		<Layout title="HTMX" htmx>
+			<Nav />
+			<h1>HTMX + Islands</h1>
+			<p>
+				Islands inserted by HTMX swaps hydrate automatically via the
+				MutationObserver.
+			</p>
+			<button
+				data-testid="htmx-load-btn"
+				type="button"
+				hx-get="/htmx/fragment"
+				hx-target="#htmx-target"
+				hx-swap="innerHTML"
+				style="padding: 0.5rem 1rem; margin-bottom: 1rem"
+			>
+				Load island via HTMX
+			</button>
+			<div
+				id="htmx-target"
+				data-testid="htmx-target"
+				style="min-height: 4rem; border: 1px dashed #aaa; border-radius: 8px; padding: 1rem"
+			>
+				<p style="color: #888">Island will appear here...</p>
+			</div>
 		</Layout>,
 	),
 );
 
-// -- HTMX fragment (partial HTML, no layout) --------------------------------
-app.get("/htmx/fragment", () =>
+app.get("/htmx/fragment", () => html(<SolidCounter initial={0} />));
+
+// /dynamic -------------------------------------------------------------------
+app.get("/dynamic", () =>
 	html(
-		<div>
-			<p>This counter was loaded via HTMX and hydrated automatically:</p>
-			<Counter initial={42} />
-		</div>,
+		<Layout title="Dynamic">
+			<Nav />
+			<h1>Dynamic Island Insertion</h1>
+			<p>
+				Islands added to the DOM after initial load are picked up automatically
+				by the MutationObserver.
+			</p>
+
+			<template id="solid-counter-tpl">
+				<SolidCounter initial={0} />
+			</template>
+			<template id="react-counter-tpl">
+				<ReactCounter initial={0} />
+			</template>
+
+			<div style={section}>
+				<button
+					data-testid="insert-solid-btn"
+					type="button"
+					onclick="document.getElementById('dynamic-target').appendChild(document.getElementById('solid-counter-tpl').content.cloneNode(true))"
+					style="padding: 0.5rem 1rem; margin-right: 0.5rem"
+				>
+					Insert Solid
+				</button>
+				<button
+					data-testid="insert-react-btn"
+					type="button"
+					onclick="document.getElementById('dynamic-target').appendChild(document.getElementById('react-counter-tpl').content.cloneNode(true))"
+					style="padding: 0.5rem 1rem; margin-right: 0.5rem"
+				>
+					Insert React
+				</button>
+				<button
+					data-testid="clear-btn"
+					type="button"
+					onclick="document.getElementById('dynamic-target').innerHTML = ''"
+					style="padding: 0.5rem 1rem"
+				>
+					Clear
+				</button>
+			</div>
+
+			<div
+				id="dynamic-target"
+				data-testid="dynamic-target"
+				style="min-height: 4rem; border: 1px dashed #aaa; border-radius: 8px; padding: 1rem; margin-top: 1rem"
+			>
+				<p style="color: #888">Islands will appear here...</p>
+			</div>
+		</Layout>,
+	),
+);
+
+// /scripts -------------------------------------------------------------------
+app.get("/scripts", () =>
+	html(
+		<Layout title="Scripts">
+			<Nav />
+			<h1>Client Scripts</h1>
+			<p>
+				A plain <code>"use client"</code> <code>.ts</code> file — no JSX
+				framework. Runs only in the browser.
+			</p>
+			<div
+				id="script-target"
+				data-testid="script-target"
+				style="padding: 1rem; border: 1px solid #ccc; border-radius: 8px; margin-top: 1rem"
+			>
+				Waiting for script...
+			</div>
+		</Layout>,
+	),
+);
+
+// /async ---------------------------------------------------------------------
+app.get("/async", () =>
+	html(
+		<Layout title="Async">
+			<Nav />
+			<h1>Async Server Components</h1>
+
+			<div data-testid="async-standalone-section" style={section}>
+				<h2>Standalone async component</h2>
+				<AsyncContent />
+			</div>
+
+			<div data-testid="async-as-children-section" style={section}>
+				<h2>Async component as island children</h2>
+				<SolidCard title="Async children">
+					<AsyncContent />
+				</SolidCard>
+			</div>
+
+			<div data-testid="async-multiple-section" style={section}>
+				<h2>Multiple async components</h2>
+				<AsyncContent />
+				<AsyncContent />
+				<AsyncContent />
+			</div>
+		</Layout>,
 	),
 );
 
