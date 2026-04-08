@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures.js";
 
 test.describe("HTMX", () => {
 	test("page loads without console errors", async ({ page }) => {
@@ -26,28 +26,40 @@ test.describe("HTMX", () => {
 		await page.goto("/htmx");
 		await page.getByTestId("htmx-load-btn").click();
 		// Wait for HTMX swap + hydration
-		await expect(page.getByTestId("solid-count")).toBeVisible({ timeout: 5000 });
+		await expect(page.getByTestId("solid-count")).toBeVisible({
+			timeout: 5000,
+		});
 	});
 
 	test("island inserted by HTMX is interactive", async ({ page }) => {
 		await page.goto("/htmx");
 		await page.getByTestId("htmx-load-btn").click();
-		await expect(page.getByTestId("solid-count")).toBeVisible({ timeout: 5000 });
+		await expect(page.getByTestId("solid-count")).toBeVisible({
+			timeout: 5000,
+		});
 		await page.getByTestId("solid-inc").click();
 		await expect(page.getByTestId("solid-count")).toHaveText("1");
 	});
 
-	test("second click replaces the island (innerHTML swap)", async ({ page }) => {
+	test("second click replaces the island (innerHTML swap)", async ({
+		page,
+	}) => {
 		await page.goto("/htmx");
 		await page.getByTestId("htmx-load-btn").click();
-		await expect(page.getByTestId("solid-count")).toBeVisible({ timeout: 5000 });
+		await expect(page.getByTestId("solid-count")).toBeVisible({
+			timeout: 5000,
+		});
 		// Increment, then reload — counter should reset
 		await page.getByTestId("solid-inc").click();
 		await page.getByTestId("htmx-load-btn").click();
-		await expect(page.getByTestId("solid-count")).toHaveText("0", { timeout: 5000 });
+		await expect(page.getByTestId("solid-count")).toHaveText("0", {
+			timeout: 5000,
+		});
 	});
 
-	test("fragment-only response is valid HTML with island wrapper", async ({ page }) => {
+	test("fragment-only response is valid HTML with island wrapper", async ({
+		page,
+	}) => {
 		const response = await page.request.get("/htmx/fragment");
 		expect(response.ok()).toBe(true);
 		const body = await response.text();

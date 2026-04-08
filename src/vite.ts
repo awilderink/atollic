@@ -10,6 +10,7 @@
  *   can refetch + morph the page without a full reload.
  */
 
+import { AsyncLocalStorage } from "node:async_hooks";
 import { readFileSync } from "node:fs";
 import { glob, readFile } from "node:fs/promises";
 import type { IncomingMessage } from "node:http";
@@ -177,8 +178,12 @@ function generateClientEntry(
 	const byFramework = new Map<string, [string, IslandInfo][]>();
 	for (const [name, info] of Object.entries(islands)) {
 		const fw = info.adapter.name;
-		if (!byFramework.has(fw)) byFramework.set(fw, []);
-		byFramework.get(fw)!.push([name, info]);
+		let bucket = byFramework.get(fw);
+		if (!bucket) {
+			bucket = [];
+			byFramework.set(fw, bucket);
+		}
+		bucket.push([name, info]);
 	}
 
 	let code = `import { registerIsland, registerFramework, initRuntime } from "atollic/client";\n`;
@@ -591,8 +596,8 @@ console.log(\`Listening on http://localhost:\${port}\`);
 			}
 
 			// Virtual framework runtime modules
-			if (id.startsWith("\0" + VIRTUAL_FW_PREFIX)) {
-				const fwName = id.slice(("\0" + VIRTUAL_FW_PREFIX).length);
+			if (id.startsWith(`\0${VIRTUAL_FW_PREFIX}`)) {
+				const fwName = id.slice(`\0${VIRTUAL_FW_PREFIX}`.length);
 				const adapter = adapters.find((a) => a.name === fwName);
 				if (adapter) return adapter.clientRuntime;
 			}
@@ -664,6 +669,12 @@ console.log(\`Listening on http://localhost:\${port}\`);
 				console.error("[atollic] Failed to load server boot module:", err);
 			});
 
+			// Per-request island id counter (see __ix_next in generated stubs).
+			const idCtx = new AsyncLocalStorage<Map<string, number>>();
+			(
+				globalThis as unknown as { __atollic_idCtx: typeof idCtx }
+			).__atollic_idCtx = idCtx;
+
 			// Use pre-middleware so we run BEFORE Vite's SPA fallback.
 			// Vite asset/module requests are let through via the URL check.
 			server.middlewares.use(async (req, res, next) => {
@@ -691,7 +702,9 @@ console.log(\`Listening on http://localhost:\${port}\`);
 					}
 
 					const webReq = toWebRequest(req);
-					const response: Response = await handler(webReq);
+					const response: Response = await idCtx.run(new Map(), () =>
+						handler(webReq),
+					);
 
 					if (response.status === 404) return next();
 

@@ -2,33 +2,31 @@ import { Elysia } from "elysia";
 import { Head } from "../../src/head.js";
 import type { Children } from "../../src/html/types.js";
 import { atollic } from "../../src/servers/elysia.js";
-
-// Solid islands
-import SolidCard from "../components/SolidCard.js";
-import SolidCounter from "../components/SolidCounter.js";
-import SolidPanel from "../components/SolidPanel.js";
-import SolidThemeCards from "../components/SolidThemeCards.js";
-import SolidTimer from "../components/SolidTimer.js";
-import SolidToggle from "../components/SolidToggle.js";
-import SolidNoPropIsland from "../components/SolidNoPropIsland.js";
-import SolidPropsShowcase from "../components/SolidPropsShowcase.js";
-import SolidChildrenShowcase from "../components/SolidChildrenShowcase.js";
-import SolidIslandA, {
-	SolidIslandB,
-	SolidIslandC,
-} from "../components/SolidNamedExports.js";
-
+import ReactChildrenShowcase from "../components/ReactChildrenShowcase.js";
+import ReactContextIsland from "../components/ReactContextIsland.js";
 // React islands
 import ReactCounter from "../components/ReactCounter.js";
-import ReactNoPropIsland from "../components/ReactNoPropIsland.js";
-import ReactPropsShowcase from "../components/ReactPropsShowcase.js";
-import ReactChildrenShowcase from "../components/ReactChildrenShowcase.js";
 import ReactIslandA, {
 	ReactIslandB,
 	ReactIslandC,
 } from "../components/ReactNamedExports.js";
+import ReactNoPropIsland from "../components/ReactNoPropIsland.js";
+import ReactPropsShowcase from "../components/ReactPropsShowcase.js";
 import ReactTimer from "../components/ReactTimer.js";
-import ReactContextIsland from "../components/ReactContextIsland.js";
+// Solid islands
+import SolidCard from "../components/SolidCard.js";
+import SolidChildrenShowcase from "../components/SolidChildrenShowcase.js";
+import SolidCounter from "../components/SolidCounter.js";
+import SolidIslandA, {
+	SolidIslandB,
+	SolidIslandC,
+} from "../components/SolidNamedExports.js";
+import SolidNoPropIsland from "../components/SolidNoPropIsland.js";
+import SolidPanel from "../components/SolidPanel.js";
+import SolidPropsShowcase from "../components/SolidPropsShowcase.js";
+import SolidThemeCards from "../components/SolidThemeCards.js";
+import SolidTimer from "../components/SolidTimer.js";
+import SolidToggle from "../components/SolidToggle.js";
 
 // Client script (discovered by Vite plugin, runs only in browser)
 import "../components/ClientScript.js";
@@ -118,19 +116,59 @@ async function AsyncContent() {
 // ---------------------------------------------------------------------------
 
 const routes: [string, string, string][] = [
-	["/basics", "Basics", "Island hydration, counters, no-prop islands, independence"],
-	["/zero-js", "Zero JS", "Page with no islands — verifies no hydration JS is loaded"],
-	["/props", "Props", "12 prop types: strings, numbers, booleans, null, arrays, objects"],
-	["/frameworks", "Frameworks", "Solid and React islands coexisting on the same page"],
-	["/children", "Children", "Server-rendered children passed into islands, cross-framework nesting"],
-	["/named-exports", "Named Exports", "Multiple island exports from a single file"],
+	[
+		"/basics",
+		"Basics",
+		"Island hydration, counters, no-prop islands, independence",
+	],
+	[
+		"/zero-js",
+		"Zero JS",
+		"Page with no islands — verifies no hydration JS is loaded",
+	],
+	[
+		"/props",
+		"Props",
+		"12 prop types: strings, numbers, booleans, null, arrays, objects",
+	],
+	[
+		"/frameworks",
+		"Frameworks",
+		"Solid and React islands coexisting on the same page",
+	],
+	[
+		"/children",
+		"Children",
+		"Server-rendered children passed into islands, cross-framework nesting",
+	],
+	[
+		"/named-exports",
+		"Named Exports",
+		"Multiple island exports from a single file",
+	],
 	["/state", "State", "Cross-island shared signal (module-level state)"],
-	["/context", "Context", "Solid createContext and React createContext inside islands"],
-	["/lifecycle", "Lifecycle", "Timer islands — onCleanup (Solid) and useEffect cleanup (React)"],
-	["/htmx", "HTMX", "Island inserted via HTMX swap, hydrated by MutationObserver"],
+	[
+		"/context",
+		"Context",
+		"Solid createContext and React createContext inside islands",
+	],
+	[
+		"/lifecycle",
+		"Lifecycle",
+		"Timer islands — onCleanup (Solid) and useEffect cleanup (React)",
+	],
+	[
+		"/htmx",
+		"HTMX",
+		"Island inserted via HTMX swap, hydrated by MutationObserver",
+	],
 	["/dynamic", "Dynamic", "Islands inserted programmatically after load"],
 	["/scripts", "Scripts", "Plain 'use client' .ts file — no JSX framework"],
-	["/async", "Async", "Async server components as standalone elements and island children"],
+	[
+		"/async",
+		"Async",
+		"Async server components as standalone elements and island children",
+	],
 ];
 
 const app = new Elysia()
@@ -152,7 +190,9 @@ const app = new Elysia()
 						>
 							{label}
 						</a>
-						<span style="color: #555; margin-left: 0.5rem; font-size: 0.9rem">{desc}</span>
+						<span style="color: #555; margin-left: 0.5rem; font-size: 0.9rem">
+							{desc}
+						</span>
 					</li>
 				))}
 			</ul>
@@ -268,7 +308,9 @@ const app = new Elysia()
 
 			<div data-testid="solid-text-children" style={section}>
 				<h2>Solid — plain text children</h2>
-				<SolidCard title="Plain text">Just a string passed as children.</SolidCard>
+				<SolidCard title="Plain text">
+					Just a string passed as children.
+				</SolidCard>
 			</div>
 
 			<div data-testid="solid-jsx-children" style={section}>
@@ -344,7 +386,9 @@ const app = new Elysia()
 		<Layout title="Named Exports">
 			<Nav />
 			<h1>Named Exports</h1>
-			<p>One file, multiple island exports — each is independently hydratable.</p>
+			<p>
+				One file, multiple island exports — each is independently hydratable.
+			</p>
 
 			<div data-testid="solid-named-section" style={section}>
 				<h2>Solid</h2>

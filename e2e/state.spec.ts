@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures.js";
 
 test.describe("Cross-island State", () => {
 	test.beforeEach(async ({ page }) => {
@@ -6,9 +6,6 @@ test.describe("Cross-island State", () => {
 	});
 
 	test("panel starts hidden", async ({ page }) => {
-		// Panel starts with max-height 0 / opacity 0 (closed state)
-		const panel = page.locator("#demo-panel");
-		// Check that the toggle button says "Show"
 		const toggleBtn = page.getByRole("button", { name: /show panel/i });
 		await expect(toggleBtn).toBeVisible();
 	});
@@ -26,7 +23,9 @@ test.describe("Cross-island State", () => {
 		await btn.click();
 		await page.getByRole("button", { name: /hide panel/i }).click();
 		// Panel collapses — button text returns to "Show"
-		await expect(page.getByRole("button", { name: /show panel/i })).toBeVisible();
+		await expect(
+			page.getByRole("button", { name: /show panel/i }),
+		).toBeVisible();
 	});
 
 	test("second panel on same signal responds to toggle", async ({ page }) => {

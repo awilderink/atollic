@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures.js";
 
 test.describe("Lifecycle", () => {
 	test("Solid timer starts at 0", async ({ page }) => {
@@ -10,7 +10,7 @@ test.describe("Lifecycle", () => {
 		await page.goto("/lifecycle");
 		await page.waitForTimeout(2200);
 		const text = await page.getByTestId("solid-timer-value").textContent();
-		const seconds = Number.parseInt(text ?? "0");
+		const seconds = Number.parseInt(text ?? "0", 10);
 		expect(seconds).toBeGreaterThanOrEqual(2);
 	});
 
@@ -23,11 +23,13 @@ test.describe("Lifecycle", () => {
 		await page.goto("/lifecycle");
 		await page.waitForTimeout(2200);
 		const text = await page.getByTestId("react-timer-value").textContent();
-		const seconds = Number.parseInt(text ?? "0");
+		const seconds = Number.parseInt(text ?? "0", 10);
 		expect(seconds).toBeGreaterThanOrEqual(2);
 	});
 
-	test("Solid timer freezes when island is removed from DOM", async ({ page }) => {
+	test("Solid timer freezes when island is removed from DOM", async ({
+		page,
+	}) => {
 		await page.goto("/lifecycle");
 		// Wait for timer to tick at least once
 		await page.waitForTimeout(1200);
@@ -35,17 +37,15 @@ test.describe("Lifecycle", () => {
 		await page.evaluate(() => {
 			document.querySelector("[data-testid='solid-timer-section']")?.remove();
 		});
-		const valueBefore = await page.evaluate(() => {
-			// Timer is gone, so we capture the last known value from what remains
-			return 0;
-		});
 		await page.waitForTimeout(1500);
 		// Timer element no longer exists — no errors should occur
 		const timerEl = page.getByTestId("solid-timer-value");
 		await expect(timerEl).toHaveCount(0);
 	});
 
-	test("React timer freezes when island is removed from DOM", async ({ page }) => {
+	test("React timer freezes when island is removed from DOM", async ({
+		page,
+	}) => {
 		await page.goto("/lifecycle");
 		await page.waitForTimeout(1200);
 		await page.evaluate(() => {

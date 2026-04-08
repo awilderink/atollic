@@ -12,16 +12,9 @@ function extractUnwrap(code: string): (v: unknown) => Promise<string> {
 	// Slice from function start to just before the first export declaration
 	const exportPos = code.indexOf("\nexport ", start);
 	const block = code.slice(start, exportPos > -1 ? exportPos : code.length);
-	return new Function(`${block}; return __ix_unwrap;`)() as (v: unknown) => Promise<string>;
-}
-
-/** Extract and eval __ix_solidHtml from a generated Solid stub string. */
-function extractSolidHtml(code: string): (v: unknown) => string {
-	const start = code.indexOf("function __ix_solidHtml(v)");
-	const end = code.indexOf("\nimport ", start);
-	const afterImport = code.indexOf("\nfunction __ix_unwrap", start);
-	const slice = code.slice(start, afterImport > -1 ? afterImport : end > -1 ? end : code.length);
-	return new Function(`${slice}; return __ix_solidHtml;`)() as (v: unknown) => string;
+	return new Function(`${block}; return __ix_unwrap;`)() as (
+		v: unknown,
+	) => Promise<string>;
 }
 
 const mockExports: IslandExport[] = [
@@ -99,17 +92,25 @@ describe("__ix_unwrap behavior", () => {
 	const unwrap = extractUnwrap(minimalStub());
 
 	test("null → empty string", async () => expect(await unwrap(null)).toBe(""));
-	test("undefined → empty string", async () => expect(await unwrap(undefined)).toBe(""));
-	test("false → empty string", async () => expect(await unwrap(false)).toBe(""));
+	test("undefined → empty string", async () =>
+		expect(await unwrap(undefined)).toBe(""));
+	test("false → empty string", async () =>
+		expect(await unwrap(false)).toBe(""));
 	test("true → empty string", async () => expect(await unwrap(true)).toBe(""));
-	test("string passthrough", async () => expect(await unwrap("hello")).toBe("hello"));
+	test("string passthrough", async () =>
+		expect(await unwrap("hello")).toBe("hello"));
 	test("number → string", async () => expect(await unwrap(42)).toBe("42"));
 	test("zero → string", async () => expect(await unwrap(0)).toBe("0"));
-	test("flat array joined", async () => expect(await unwrap(["a", "b", "c"])).toBe("abc"));
-	test("nested array flattened", async () => expect(await unwrap(["a", ["b", "c"]])).toBe("abc"));
-	test("array with nulls skips them", async () => expect(await unwrap([null, "x", false, "y"])).toBe("xy"));
-	test("array with numbers", async () => expect(await unwrap([1, 2, 3])).toBe("123"));
-	test("resolved promise passthrough", async () => expect(await unwrap(Promise.resolve("async"))).toBe("async"));
+	test("flat array joined", async () =>
+		expect(await unwrap(["a", "b", "c"])).toBe("abc"));
+	test("nested array flattened", async () =>
+		expect(await unwrap(["a", ["b", "c"]])).toBe("abc"));
+	test("array with nulls skips them", async () =>
+		expect(await unwrap([null, "x", false, "y"])).toBe("xy"));
+	test("array with numbers", async () =>
+		expect(await unwrap([1, 2, 3])).toBe("123"));
+	test("resolved promise passthrough", async () =>
+		expect(await unwrap(Promise.resolve("async"))).toBe("async"));
 });
 
 // ---------------------------------------------------------------------------
@@ -121,19 +122,21 @@ describe("__ix_solidHtml behavior", () => {
 	const solidImports = `function __ix_solidHtml(v) {
   return typeof v === "string" ? v : v && typeof v.t === "string" ? v.t : "";
 }`;
-	const solidHtml = new Function(`${solidImports}; return __ix_solidHtml;`)() as (
-		v: unknown,
-	) => string;
+	const solidHtml = new Function(
+		`${solidImports}; return __ix_solidHtml;`,
+	)() as (v: unknown) => string;
 
 	test("{ t: '<p>...' } extracts .t", () =>
 		expect(solidHtml({ t: "<p>hello</p>" })).toBe("<p>hello</p>"));
 
-	test("plain string passthrough", () => expect(solidHtml("<span>x</span>")).toBe("<span>x</span>"));
+	test("plain string passthrough", () =>
+		expect(solidHtml("<span>x</span>")).toBe("<span>x</span>"));
 
 	test("null → empty string", () => expect(solidHtml(null)).toBe(""));
 	test("undefined → empty string", () => expect(solidHtml(undefined)).toBe(""));
 	test("{ t: '' } → empty string", () => expect(solidHtml({ t: "" })).toBe(""));
-	test("object without .t → empty string", () => expect(solidHtml({ other: "x" })).toBe(""));
+	test("object without .t → empty string", () =>
+		expect(solidHtml({ other: "x" })).toBe(""));
 });
 
 // ---------------------------------------------------------------------------
@@ -163,7 +166,9 @@ describe("jsx attribute escaping", () => {
 	});
 
 	test("XSS probe: script tag in attribute does not execute", async () => {
-		const out = await jsx("div", { "data-x": '<script>window.__xss=1</script>' });
+		const out = await jsx("div", {
+			"data-x": "<script>window.__xss=1</script>",
+		});
 		expect(out).not.toContain("<script>");
 		expect(out).toContain("&lt;script&gt;");
 	});
@@ -187,11 +192,15 @@ describe("jsx attribute escaping", () => {
 describe("props JSON round-trip in generated stub", () => {
 	// Build a stub whose renderExpr returns "" — we only care about the
 	// propsJson embedded in the <script> tag.
-	const code = buildSsrStub("./fake.js", [{ exportName: "default", islandName: "RoundTrip" }], {
-		framework: "test",
-		imports: "",
-		renderExpr: () => '""',
-	});
+	const code = buildSsrStub(
+		"./fake.js",
+		[{ exportName: "default", islandName: "RoundTrip" }],
+		{
+			framework: "test",
+			imports: "",
+			renderExpr: () => '""',
+		},
+	);
 
 	// Strip import lines so the code is self-contained, then eval it
 	const runnable = code
@@ -199,7 +208,9 @@ describe("props JSON round-trip in generated stub", () => {
 		.replace(/^export default async function/m, "async function __stub_default")
 		.replace(/^export async function (\w+)/gm, "async function $1");
 
-	const fn = new Function(`${runnable}; return __stub_default;`)() as (props: Record<string, unknown>) => string;
+	const fn = new Function(`${runnable}; return __stub_default;`)() as (
+		props: Record<string, unknown>,
+	) => string;
 
 	test("string prop round-trips", async () => {
 		const html = await fn({ message: "hello world" });
@@ -250,8 +261,8 @@ describe("props JSON round-trip in generated stub", () => {
 		expect(id1).toBeTruthy();
 		expect(id2).toBeTruthy();
 		expect(id1).not.toBe(id2);
-		const n1 = Number(id1!.split("-").at(-1));
-		const n2 = Number(id2!.split("-").at(-1));
+		const n1 = Number((id1 as string).split("-").at(-1));
+		const n2 = Number((id2 as string).split("-").at(-1));
 		expect(n2).toBe(n1 + 1);
 	});
 });

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures.js";
 
 test.describe("Children", () => {
 	test.beforeEach(async ({ page }) => {
@@ -28,10 +28,14 @@ test.describe("Children", () => {
 	});
 
 	test("toggleable content is present in children slot", async ({ page }) => {
-		await expect(page.getByTestId("toggleable-content")).toContainText("This content can be hidden.");
+		await expect(page.getByTestId("toggleable-content")).toContainText(
+			"This content can be hidden.",
+		);
 	});
 
-	test("async server children resolve inside Solid island", async ({ page }) => {
+	test("async server children resolve inside Solid island", async ({
+		page,
+	}) => {
 		const section = page.getByTestId("solid-async-children");
 		await expect(section.getByTestId("async-content")).toBeVisible();
 	});
@@ -42,7 +46,9 @@ test.describe("Children", () => {
 		await expect(section.getByTestId("solid-count")).toHaveText("1");
 	});
 
-	test("server JSX children inside React island are visible", async ({ page }) => {
+	test("server JSX children inside React island are visible", async ({
+		page,
+	}) => {
 		const section = page.getByTestId("react-jsx-children");
 		// Children are delivered via dangerouslySetInnerHTML after React hydration
 		await expect(section).toContainText("Paragraph rendered");
@@ -53,13 +59,17 @@ test.describe("Children", () => {
 		const toggle = section.getByTestId("react-children-toggle");
 		// Toggle hide
 		await toggle.click();
-		await expect(section.getByTestId("react-children-content")).not.toBeVisible();
+		await expect(
+			section.getByTestId("react-children-content"),
+		).not.toBeVisible();
 		// Toggle show
 		await toggle.click();
 		await expect(section.getByTestId("react-children-content")).toBeVisible();
 	});
 
-	test("cross-framework: React outer, Solid inner — SSR content correct", async ({ page }) => {
+	test("cross-framework: React outer, Solid inner — SSR content correct", async ({
+		page,
+	}) => {
 		// Verify both frameworks render in the correct position during SSR.
 		// Post-hydration interactivity of a nested cross-framework island is
 		// not tested here — dual hydration (React reconciler + Solid reactive
@@ -70,7 +80,9 @@ test.describe("Children", () => {
 		await expect(section.getByTestId("solid-count")).toHaveText("5");
 	});
 
-	test("cross-framework: Solid outer, React inner — SSR content correct", async ({ page }) => {
+	test("cross-framework: Solid outer, React inner — SSR content correct", async ({
+		page,
+	}) => {
 		const section = page.getByTestId("cross-solid-react-children");
 		await expect(section.getByTestId("solid-children-showcase")).toBeVisible();
 		await expect(section.getByTestId("react-count")).toBeAttached();

@@ -51,7 +51,13 @@ export default function ReactContextIsland(props: { cards: string[] }) {
 
 	return (
 		<ThemeContext.Provider value={{ theme, toggle }}>
-			<div style={{ padding: "1rem", border: "1px solid #ccc", borderRadius: "8px" }}>
+			<div
+				style={{
+					padding: "1rem",
+					border: "1px solid #ccc",
+					borderRadius: "8px",
+				}}
+			>
 				<ThemeSwitch />
 				{props.cards.map((title, i) => (
 					<ThemeCard key={title} title={title} index={i} />

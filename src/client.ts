@@ -86,6 +86,9 @@ interface MountedIsland {
 
 const mounted = new Map<HTMLElement, MountedIsland>();
 
+/** Elements mid-mount — blocks concurrent mountIslands calls from double-rooting the same el. */
+const pending = new Set<HTMLElement>();
+
 /**
  * Islands present in the DOM before any JS ran. Only these get `hydrateIsland`
  * so that their SSR-rendered DOM is reused. All dynamically inserted islands
@@ -121,65 +124,77 @@ function disposeIsland(el: HTMLElement): void {
 export async function mountIslands(
 	root: Element | Document = document,
 ): Promise<void> {
-	const els = root.querySelectorAll<HTMLElement>(ISLAND_SELECTOR);
+	// querySelectorAll returns document order, so parents come before children.
+	const els = Array.from(root.querySelectorAll<HTMLElement>(ISLAND_SELECTOR));
 
-	const tasks: Promise<void>[] = [];
-	for (const el of els) {
-		if (mounted.has(el)) continue;
-
-		const name = el.getAttribute(ISLAND_ATTR);
-		if (!name) continue;
-
-		const entry = registry.get(name);
-		if (!entry) {
-			console.warn(`[atollic] Unknown island: "${name}"`);
-			continue;
-		}
-
-		const fw = frameworks.get(entry.framework);
-		if (!fw) {
-			console.warn(
-				`[atollic] Unknown framework "${entry.framework}" for island "${name}"`,
-			);
-			continue;
-		}
-
-		// Read props from embedded <script type="application/json">
-		const script = el.querySelector<HTMLScriptElement>(
-			':scope > script[type="application/json"]',
-		);
-		const props = script ? JSON.parse(script.textContent || "{}") : {};
-
-		// Remove the props script before hydrating (not part of component DOM)
-		if (script) script.remove();
-
-		// Only reuse server-rendered DOM for islands that were present at page
-		// load. Dynamically inserted islands (htmx, MutationObserver, etc.)
-		// always get a fresh render — their `_$HY` hydration records are gone.
-		const hasSSR = ssrIslands.has(el) && el.childNodes.length > 0;
-
-		tasks.push(
-			(async () => {
-				try {
-					const mod = await entry.loader();
-					const Component = mod.default;
-					let dispose: () => void;
-					if (hasSSR && el.id) {
-						// Original SSR island — hydrate to reuse existing DOM
-						dispose = fw.hydrate(el, Component, props, el.id);
-					} else {
-						// Dynamically added — full render
-						dispose = fw.render(el, Component, props);
-					}
-					mounted.set(el, { dispose, name, props });
-				} catch (err) {
-					console.error(`[atollic] Failed to mount island "${name}":`, err);
-				}
-			})(),
-		);
+	interface PreparedIsland {
+		el: HTMLElement;
+		// biome-ignore lint/suspicious/noExplicitAny: component type varies per framework
+		Component: any;
+		props: Record<string, unknown>;
+		name: string;
+		fw: FrameworkRuntime;
+		hasSSR: boolean;
 	}
 
-	await Promise.all(tasks);
+	const prepared: (PreparedIsland | null)[] = await Promise.all(
+		els.map(async (el): Promise<PreparedIsland | null> => {
+			if (mounted.has(el) || pending.has(el)) return null;
+
+			const name = el.getAttribute(ISLAND_ATTR);
+			if (!name) return null;
+
+			const entry = registry.get(name);
+			if (!entry) {
+				console.warn(`[atollic] Unknown island: "${name}"`);
+				return null;
+			}
+
+			const fw = frameworks.get(entry.framework);
+			if (!fw) {
+				console.warn(
+					`[atollic] Unknown framework "${entry.framework}" for island "${name}"`,
+				);
+				return null;
+			}
+
+			pending.add(el);
+			try {
+				const script = el.querySelector<HTMLScriptElement>(
+					':scope > script[type="application/json"]',
+				);
+				const props = script ? JSON.parse(script.textContent || "{}") : {};
+				if (script) script.remove();
+				const hasSSR = ssrIslands.has(el) && el.childNodes.length > 0;
+				const mod = await entry.loader();
+				return { el, Component: mod.default, props, name, fw, hasSSR };
+			} catch (err) {
+				console.error(`[atollic] Failed to prepare island "${name}":`, err);
+				pending.delete(el);
+				return null;
+			}
+		}),
+	);
+
+	// Serial mount in depth order: parent render may tear out nested island
+	// DOM, so by the time we reach a child its el.isConnected is false.
+	for (const p of prepared) {
+		if (!p) continue;
+		try {
+			if (!p.el.isConnected) continue;
+			let dispose: () => void;
+			if (p.hasSSR && p.el.id) {
+				dispose = p.fw.hydrate(p.el, p.Component, p.props, p.el.id);
+			} else {
+				dispose = p.fw.render(p.el, p.Component, p.props);
+			}
+			mounted.set(p.el, { dispose, name: p.name, props: p.props });
+		} catch (err) {
+			console.error(`[atollic] Failed to mount island "${p.name}":`, err);
+		} finally {
+			pending.delete(p.el);
+		}
+	}
 }
 
 export function disposeIslands(root: Element | Document = document): void {
@@ -215,7 +230,17 @@ async function morphPage(newHtml: string): Promise<void> {
 
 		const Idiomorph = await getIdiomorph();
 		Idiomorph.morph(document.body, newDoc.body, {
-			morphStyle: "innerHTML",
+			morphStyle: "outerHTML",
+			callbacks: {
+				// Skip island subtrees — hydrated components own their DOM and state.
+				beforeNodeMorphed: (...args: unknown[]) => {
+					const oldNode = args[0] as Node;
+					return !(
+						oldNode.nodeType === Node.ELEMENT_NODE &&
+						(oldNode as Element).hasAttribute(ISLAND_ATTR)
+					);
+				},
+			},
 		});
 
 		// Dispose islands whose elements were removed by the morph
@@ -249,8 +274,9 @@ export function initRuntime(): void {
 		ssrIslands.add(el);
 	}
 
-	// Mount islands already in the page, then signal readiness
 	mountIslands().then(() => {
+		// Early listeners use the event; late checks use the flag.
+		(window as unknown as { __atollicReady: boolean }).__atollicReady = true;
 		document.dispatchEvent(new CustomEvent("atollic:ready"));
 	});
 

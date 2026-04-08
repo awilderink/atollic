@@ -1,8 +1,8 @@
 import { createRequire } from "node:module";
 import {
+	ATOLLIC_CHILDREN_KEY,
 	buildSsrStub,
 	type FrameworkAdapter,
-	loadVitePluginFactory,
 } from "../adapter.js";
 
 const require = createRequire(import.meta.url);
@@ -14,7 +14,9 @@ export function react(): FrameworkAdapter {
 		jsxImportSources: ["react"],
 
 		plugins() {
-			return loadVitePluginFactory(require, "@vitejs/plugin-react");
+			const mod = require("@vitejs/plugin-react");
+			const factory = typeof mod === "function" ? mod : mod.default;
+			return [factory()];
 		},
 
 		ssrStub(rawImportPath, fileExports) {
@@ -32,9 +34,11 @@ import { createElement } from "react";`,
 import { hydrateRoot, createRoot } from "react-dom/client";
 import { createElement } from "react";
 
+const CHILDREN_KEY = ${JSON.stringify(ATOLLIC_CHILDREN_KEY)};
+
 function resolveProps(props) {
-  const { __atollic_children__: rawHtml, ...rest } = props;
-  if (!rawHtml) return rest;
+  const { [CHILDREN_KEY]: rawHtml, ...rest } = props;
+  if (rawHtml == null) return rest;
   return { ...rest, children: createElement("div", {
     dangerouslySetInnerHTML: { __html: rawHtml },
     style: { display: "contents" },
@@ -42,6 +46,13 @@ function resolveProps(props) {
 }
 
 export function hydrateIsland(el, Component, props) {
+  // Skip hydration when children are spliced via sentinel — DOM shapes don't match.
+  if (CHILDREN_KEY in props) {
+    el.textContent = "";
+    const root = createRoot(el);
+    root.render(createElement(Component, resolveProps(props)));
+    return () => root.unmount();
+  }
   const root = hydrateRoot(el, createElement(Component, resolveProps(props)));
   return () => root.unmount();
 }

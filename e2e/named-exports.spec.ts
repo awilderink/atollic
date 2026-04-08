@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures.js";
 
 test.describe("Named Exports", () => {
 	test.beforeEach(async ({ page }) => {

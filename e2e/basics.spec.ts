@@ -1,7 +1,9 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures.js";
 
 test.describe("Basics", () => {
-	test("Solid counter SSR content present before hydration", async ({ page }) => {
+	test("Solid counter SSR content present before hydration", async ({
+		page,
+	}) => {
 		await page.goto("/basics");
 		const section = page.getByTestId("solid-counter-section");
 		await expect(section.getByTestId("solid-count")).toBeAttached();
@@ -24,7 +26,9 @@ test.describe("Basics", () => {
 		await expect(section.getByTestId("solid-count")).toHaveText("1");
 	});
 
-	test("React counter SSR content present before hydration", async ({ page }) => {
+	test("React counter SSR content present before hydration", async ({
+		page,
+	}) => {
 		await page.goto("/basics");
 		const section = page.getByTestId("react-counter-section");
 		await expect(section.getByTestId("react-count")).toBeAttached();
@@ -41,20 +45,28 @@ test.describe("Basics", () => {
 	test("Solid no-prop island renders without props", async ({ page }) => {
 		await page.goto("/basics");
 		await expect(page.getByTestId("solid-noprop")).toBeVisible();
-		await expect(page.getByTestId("solid-noprop")).toContainText("Solid island");
+		await expect(page.getByTestId("solid-noprop")).toContainText(
+			"Solid island",
+		);
 	});
 
 	test("React no-prop island renders without props", async ({ page }) => {
 		await page.goto("/basics");
 		await expect(page.getByTestId("react-noprop")).toBeVisible();
-		await expect(page.getByTestId("react-noprop")).toContainText("React island");
+		await expect(page.getByTestId("react-noprop")).toContainText(
+			"React island",
+		);
 	});
 
 	test("two Solid counters are independent", async ({ page }) => {
 		await page.goto("/basics");
 		await page.getByTestId("counter-a").getByTestId("solid-inc").click();
-		await expect(page.getByTestId("counter-a").getByTestId("solid-count")).toHaveText("1");
-		await expect(page.getByTestId("counter-b").getByTestId("solid-count")).toHaveText("0");
+		await expect(
+			page.getByTestId("counter-a").getByTestId("solid-count"),
+		).toHaveText("1");
+		await expect(
+			page.getByTestId("counter-b").getByTestId("solid-count"),
+		).toHaveText("0");
 	});
 
 	test("zero-js page has no data-island elements", async ({ page }) => {

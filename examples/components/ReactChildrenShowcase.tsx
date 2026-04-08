@@ -3,7 +3,10 @@
 
 import { useState } from "react";
 
-export default function ReactChildrenShowcase(props: { title: string; children?: React.ReactNode }) {
+export default function ReactChildrenShowcase(props: {
+	title: string;
+	children?: React.ReactNode;
+}) {
 	const [visible, setVisible] = useState(true);
 
 	return (
@@ -11,7 +14,13 @@ export default function ReactChildrenShowcase(props: { title: string; children?:
 			data-testid="react-children-showcase"
 			style={{ padding: "1rem", border: "1px solid #ccc", borderRadius: "8px" }}
 		>
-			<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+			<div
+				style={{
+					display: "flex",
+					justifyContent: "space-between",
+					alignItems: "center",
+				}}
+			>
 				<strong>{props.title}</strong>
 				<button
 					data-testid="react-children-toggle"
@@ -23,7 +32,10 @@ export default function ReactChildrenShowcase(props: { title: string; children?:
 				</button>
 			</div>
 			{visible && (
-				<div data-testid="react-children-content" style={{ marginTop: "0.5rem" }}>
+				<div
+					data-testid="react-children-content"
+					style={{ marginTop: "0.5rem" }}
+				>
 					{props.children}
 				</div>
 			)}

@@ -20,7 +20,8 @@ export default function ReactTimer(props: { label?: string }) {
 			}}
 		>
 			<p>
-				{props.label ?? "Timer"}: <strong data-testid="react-timer-value">{seconds}s</strong>
+				{props.label ?? "Timer"}:{" "}
+				<strong data-testid="react-timer-value">{seconds}s</strong>
 			</p>
 		</div>
 	);

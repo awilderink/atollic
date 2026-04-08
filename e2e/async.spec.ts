@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures.js";
 
 test.describe("Async Server Components", () => {
 	test.beforeEach(async ({ page }) => {
@@ -8,7 +8,9 @@ test.describe("Async Server Components", () => {
 	test("standalone async component content is visible", async ({ page }) => {
 		const section = page.getByTestId("async-standalone-section");
 		await expect(section.getByTestId("async-content")).toBeVisible();
-		await expect(section.getByTestId("async-content")).toHaveText("Async server content resolved");
+		await expect(section.getByTestId("async-content")).toHaveText(
+			"Async server content resolved",
+		);
 	});
 
 	test("async component as island children resolves", async ({ page }) => {

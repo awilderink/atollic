@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures.js";
 
 test.describe("Props", () => {
 	test.beforeEach(async ({ page }) => {
@@ -8,7 +8,9 @@ test.describe("Props", () => {
 	// --- Solid ---
 
 	test("Solid: plain string rendered", async ({ page }) => {
-		await expect(page.getByTestId("solid-prop-plain-string")).toHaveText("hello world");
+		await expect(page.getByTestId("solid-prop-plain-string")).toHaveText(
+			"hello world",
+		);
 	});
 
 	test("Solid: html-string shown as escaped text", async ({ page }) => {
@@ -20,7 +22,9 @@ test.describe("Props", () => {
 
 	test("Solid: XSS string does not execute script", async ({ page }) => {
 		// If XSS worked, window.__xss would be 1
-		const xss = await page.evaluate(() => (window as Record<string, unknown>).__xss);
+		const xss = await page.evaluate(
+			() => (window as Record<string, unknown>).__xss,
+		);
 		expect(xss).toBeUndefined();
 		await expect(page.getByTestId("solid-prop-xss-string")).toBeVisible();
 	});
@@ -64,7 +68,9 @@ test.describe("Props", () => {
 	// --- React ---
 
 	test("React: plain string rendered", async ({ page }) => {
-		await expect(page.getByTestId("react-prop-plain-string")).toHaveText("hello world");
+		await expect(page.getByTestId("react-prop-plain-string")).toHaveText(
+			"hello world",
+		);
 	});
 
 	test("React: integer prop", async ({ page }) => {
@@ -100,7 +106,9 @@ test.describe("Props", () => {
 	});
 
 	test("React: XSS string does not execute script", async ({ page }) => {
-		const xss = await page.evaluate(() => (window as Record<string, unknown>).__xss);
+		const xss = await page.evaluate(
+			() => (window as Record<string, unknown>).__xss,
+		);
 		expect(xss).toBeUndefined();
 	});
 });
