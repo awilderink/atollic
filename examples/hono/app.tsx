@@ -118,8 +118,49 @@ async function AsyncContent() {
 // Routes
 // ---------------------------------------------------------------------------
 
+const routes: [string, string, string][] = [
+	["/basics", "Basics", "Island hydration, counters, no-prop islands, independence"],
+	["/zero-js", "Zero JS", "Page with no islands — verifies no hydration JS is loaded"],
+	["/props", "Props", "12 prop types: strings, numbers, booleans, null, arrays, objects"],
+	["/frameworks", "Frameworks", "Solid and React islands coexisting on the same page"],
+	["/children", "Children", "Server-rendered children passed into islands, cross-framework nesting"],
+	["/named-exports", "Named Exports", "Multiple island exports from a single file"],
+	["/state", "State", "Cross-island shared signal (module-level state)"],
+	["/context", "Context", "Solid createContext and React createContext inside islands"],
+	["/lifecycle", "Lifecycle", "Timer islands — onCleanup (Solid) and useEffect cleanup (React)"],
+	["/htmx", "HTMX", "Island inserted via HTMX swap, hydrated by MutationObserver"],
+	["/dynamic", "Dynamic", "Islands inserted programmatically after load"],
+	["/scripts", "Scripts", "Plain 'use client' .ts file — no JSX framework"],
+	["/async", "Async", "Async server components as standalone elements and island children"],
+];
+
 const app = new Hono();
 app.use(atollic());
+
+// / --------------------------------------------------------------------------
+app.get("/", () =>
+	html(
+		<Layout title="atollic examples">
+			<h1 style="margin-bottom: 0.25rem">atollic</h1>
+			<p style="color: #666; margin-top: 0; margin-bottom: 2rem">
+				Island architecture for WinterCG runtimes — example routes
+			</p>
+			<ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.75rem">
+				{routes.map(([href, label, desc]) => (
+					<li>
+						<a
+							href={href}
+							style="font-weight: 600; text-decoration: none; color: #0070f3"
+						>
+							{label}
+						</a>
+						<span style="color: #555; margin-left: 0.5rem; font-size: 0.9rem">{desc}</span>
+					</li>
+				))}
+			</ul>
+		</Layout>,
+	),
+);
 
 // /basics --------------------------------------------------------------------
 app.get("/basics", () =>
