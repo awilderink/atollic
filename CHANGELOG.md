@@ -1,5 +1,13 @@
 # atollic
 
+## 0.0.6
+
+### Patch Changes
+
+- [#11](https://github.com/awilderink/atollic/pull/11) [`e49d311`](https://github.com/awilderink/atollic/commit/e49d3119a2d2c213e9822c60b1fda74fbf847b88) Thanks [@awilderink](https://github.com/awilderink)! - Fix async children and React children hydration inside islands. Server-rendered children passed into an island now resolve correctly when they are async (promises/JSX returning a promise) and survive hydration on React islands without being reconciled away.
+
+- [#11](https://github.com/awilderink/atollic/pull/11) [`e49d311`](https://github.com/awilderink/atollic/commit/e49d3119a2d2c213e9822c60b1fda74fbf847b88) Thanks [@awilderink](https://github.com/awilderink)! - Preserve hydrated island state across server HMR. Editing a server file no longer resets the state of mounted islands: the morph now skips island subtrees (via `beforeNodeMorphed`) and island ids stay stable across the HMR refetch thanks to a per-request id counter backed by `AsyncLocalStorage`.
+
 ## 0.0.5
 
 ### Patch Changes
