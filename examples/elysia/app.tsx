@@ -5,6 +5,7 @@ import { atollic } from "../../src/servers/elysia.js";
 import Card from "../components/Card.js";
 import Counter from "../components/Counter.js";
 import Panel from "../components/Panel.js";
+import ReactCounter from "../components/ReactCounter.js";
 import Tabs from "../components/Tabs.js";
 import ThemeCards from "../components/ThemeCards.js";
 import Timer from "../components/Timer.js";
@@ -66,10 +67,15 @@ const app = new Elysia()
 				<Nav />
 				<h1>atollic</h1>
 				<p>
-					This paragraph is server-rendered by Elysia. The counter below is a
-					Solid island.
+					This paragraph is server-rendered by Elysia. The first counter below
+					is a Solid island; the second is a React island. Both are rendered
+					on the server and hydrated by their respective runtimes on the
+					client.
 				</p>
 				<Counter initial={0} />
+				<div style="margin-top: 0.5rem">
+					<ReactCounter initial={0} />
+				</div>
 			</main>
 		</Layout>
 	))
