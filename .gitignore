@@ -3,3 +3,6 @@ dist
 .vite
 *.log
 CLAUDE.md
+test-results/
+playwright-report/
+article-updated.md

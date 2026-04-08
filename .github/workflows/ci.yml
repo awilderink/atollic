@@ -15,10 +15,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          # Needed so `changeset status --since=origin/main` can diff against main
+          fetch-depth: 0
 
       - uses: oven-sh/setup-bun@v2
 
       - run: bun install --frozen-lockfile
+
+      - name: Check for changeset
+        # Skip on the auto-generated "Version Packages" PR: it deletes every
+        # consumed changeset file, so the gate would always fail on it.
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.user.login != 'github-actions[bot]'
+        run: bunx changeset status --since=origin/main
 
       - name: Typecheck
         run: bun run typecheck
@@ -27,7 +38,7 @@ jobs:
         run: bun run lint
 
       - name: Test
-        run: bun test
+        run: bun run test:unit
 
       - name: Build
         run: bun run build

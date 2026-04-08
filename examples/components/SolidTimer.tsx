@@ -18,7 +18,8 @@ export default function Timer(props: { label?: string }) {
 			}}
 		>
 			<p>
-				{props.label ?? "Timer"}: <strong>{seconds()}s</strong>
+				{props.label ?? "Timer"}:{" "}
+				<strong data-testid="solid-timer-value">{seconds()}s</strong>
 			</p>
 		</div>
 	);

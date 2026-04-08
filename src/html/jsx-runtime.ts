@@ -60,14 +60,8 @@ function unwrap(value: unknown): string | Promise<string> {
 		if (hasPromise) return Promise.all(mapped).then((parts) => parts.join(""));
 		return (mapped as string[]).join("");
 	}
-	// Handle Solid SSR format: { t: "<html>..." }
-	if (typeof value === "object" && "t" in (value as object)) {
-		return (value as { t: string }).t;
-	}
 	return String(value);
 }
-
-const renderChildren = unwrap;
 
 export function jsx(
 	tag: string | ((props: Record<string, unknown>) => unknown),
@@ -96,7 +90,7 @@ export function jsx(
 			(props.dangerouslySetInnerHTML as { __html: unknown }).__html,
 		);
 	} else if (props.children != null) {
-		content = renderChildren(props.children);
+		content = unwrap(props.children);
 	}
 
 	if (content instanceof Promise) {
@@ -111,7 +105,7 @@ export const jsxs = jsx;
 export function Fragment(props: {
 	children?: unknown;
 }): string | Promise<string> {
-	return renderChildren(props.children);
+	return unwrap(props.children);
 }
 
 // Ensure global JSX declarations from types.ts are loaded

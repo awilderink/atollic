@@ -8,6 +8,7 @@ export default function Panel(props: { id: string; text: string }) {
 
 	return (
 		<div
+			id={props.id}
 			style={{
 				overflow: "hidden",
 				"max-height": open() ? "200px" : "0",

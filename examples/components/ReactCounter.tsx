@@ -15,9 +15,10 @@ export default function ReactCounter(props: { initial: number }) {
 			}}
 		>
 			<p>
-				Count: <strong>{count}</strong>
+				Count: <strong data-testid="react-count">{count}</strong>
 			</p>
 			<button
+				data-testid="react-inc"
 				type="button"
 				onClick={() => setCount((c) => c + 1)}
 				style={{ marginRight: "0.5rem", padding: "0.25rem 0.75rem" }}
@@ -25,6 +26,7 @@ export default function ReactCounter(props: { initial: number }) {
 				+
 			</button>
 			<button
+				data-testid="react-dec"
 				type="button"
 				onClick={() => setCount((c) => c - 1)}
 				style={{ padding: "0.25rem 0.75rem" }}

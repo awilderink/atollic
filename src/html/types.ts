@@ -8,7 +8,7 @@ export type Children =
 	| Promise<Children>
 	| Children[];
 
-export type Component<T = {}> = (
+export type Component<T = Record<string, unknown>> = (
 	props: T & { children?: Children },
 ) => string | Promise<string>;
 
@@ -88,6 +88,7 @@ type AriaRole =
 declare global {
 	namespace JSX {
 		type Element = string | Promise<string>;
+		// biome-ignore lint/suspicious/noExplicitAny: JSX ElementType is contravariant in props; must accept any component shape
 		type ElementType = string | ((props: any) => any);
 
 		// -------------------------------------------------------------------
@@ -558,7 +559,7 @@ declare global {
 		}
 
 		interface HtmlSvgTag extends HtmlTag {
-			[attr: string]: any;
+			[attr: string]: unknown;
 		}
 
 		// -------------------------------------------------------------------
@@ -742,11 +743,17 @@ declare global {
 		}
 
 		interface ElementChildrenAttribute {
-			children: {};
+			children: unknown;
 		}
 
-		interface IntrinsicAttributes {}
+		// Extension point for framework-level JSX attributes (e.g. `key`).
+		// Empty by design — add well-known attributes via declaration merging.
+		interface IntrinsicAttributes {
+			key?: string | number;
+		}
 
-		type Component<T = {}> = (props: T & { children?: Children }) => Element;
+		type Component<T = Record<string, unknown>> = (
+			props: T & { children?: Children },
+		) => Element;
 	}
 }
