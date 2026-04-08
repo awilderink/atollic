@@ -39,8 +39,8 @@ function minimalStub(exports: IslandExport[] = mockExports): string {
 // ---------------------------------------------------------------------------
 
 describe("buildSsrStub output shape", () => {
-	test("contains __ix_idx declaration", () => {
-		expect(minimalStub()).toContain("let __ix_idx = 0;");
+	test("contains per-request __ix_next counter", () => {
+		expect(minimalStub()).toContain("function __ix_next(name)");
 	});
 
 	test("contains __ix_unwrap function", () => {
