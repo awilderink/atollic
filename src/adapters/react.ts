@@ -64,5 +64,42 @@ export function renderIsland(el, Component, props) {
   return () => root.unmount();
 }
 `,
+
+		transformUniversal(code: string): string {
+			return (
+				code
+					// Attribute name mappings
+					.replace(/(?<!\.)(\bclass)(?=\s*=)/g, "className")
+					.replace(/(?<!\.)(\bfor)(?=\s*=)/g, "htmlFor")
+					.replace(/\btabindex(?=\s*=)/g, "tabIndex")
+					.replace(/\breadonly(?=[\s/>])/g, "readOnly")
+					.replace(/\bmaxlength(?=\s*=)/g, "maxLength")
+					.replace(/\bminlength(?=\s*=)/g, "minLength")
+					.replace(/\bcolspan(?=\s*=)/g, "colSpan")
+					.replace(/\browspan(?=\s*=)/g, "rowSpan")
+					.replace(/\bcrossorigin(?=\s*=)/g, "crossOrigin")
+					.replace(/\bautocomplete(?=\s*=)/g, "autoComplete")
+					.replace(/\bautofocus(?=[\s/>])/g, "autoFocus")
+					// Convert static style="css" strings to style={{...}} objects
+					.replace(/\bstyle="([^"]+)"/g, (_match, css: string) => {
+						const entries = css
+							.split(";")
+							.map((p) => p.trim())
+							.filter(Boolean)
+							.map((p) => {
+								const i = p.indexOf(":");
+								if (i === -1) return null;
+								const prop = p
+									.slice(0, i)
+									.trim()
+									.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
+								const val = p.slice(i + 1).trim();
+								return `${prop}: "${val}"`;
+							})
+							.filter(Boolean);
+						return `style={{${entries.join(", ")}}}`;
+					})
+			);
+		},
 	};
 }

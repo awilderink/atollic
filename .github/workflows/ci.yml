@@ -50,3 +50,9 @@ jobs:
       - name: Build example (hono)
         working-directory: examples/hono
         run: bunx --bun vite build
+
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+
+      - name: E2E tests
+        run: bun run test:e2e

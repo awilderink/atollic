@@ -38,6 +38,7 @@ function renderAttrs(props: Record<string, unknown>): string {
 			continue;
 		}
 		if (value === false || value == null) continue;
+		if (typeof value === "function") continue;
 		result += ` ${key}="${escapeAttr(String(value))}"`;
 	}
 	return result;

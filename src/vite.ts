@@ -37,6 +37,8 @@ const RESOLVED_VIRTUAL_SERVER_BOOT_ID = `\0${VIRTUAL_SERVER_BOOT_ID}`;
 const VIRTUAL_FW_PREFIX = "virtual:atollic/fw-";
 const HMR_RELOAD_EVENT = "atollic:reload";
 const RAW_ISLAND_QUERY = "?raw-island";
+const FRAMEWORK_QUERY_RE = /[?&]framework=(\w+)/;
+const FRAMEWORK_QUERY_PREFIX = "?framework=";
 
 /** Matches .ts, .tsx, .js, .jsx */
 const ALL_SCRIPT_RE = /\.[jt]sx?$/;
@@ -312,6 +314,11 @@ export function atollic(options: AtollicOptions): Plugin[] {
 	let islandsScanned = false;
 	let cachedCssUrls: Set<string> | null = null;
 
+	/** Maps island absPath to framework adapter name for context propagation. */
+	const islandFrameworks = new Map<string, string>();
+	/** Caches universal component classification and raw content. null = not universal or unreadable. */
+	const universalFileCache = new Map<string, { content: string } | null>();
+
 	/**
 	 * Resolve which adapter handles an island file. Order:
 	 * 1. Explicit `"use client:foo"` framework name
@@ -340,7 +347,43 @@ export function atollic(options: AtollicOptions): Plugin[] {
 	function registerIsland(info: IslandInfo, islandName: string) {
 		if (islands[islandName]) return;
 		islands[islandName] = info;
+		islandFrameworks.set(info.absPath, info.adapter.name);
 		invalidateClientEntry();
+	}
+
+	/**
+	 * Determine the framework context from an importer's module ID.
+	 * Returns the framework name if the importer is a known island file
+	 * or already carries a `?framework=X` query (transitive propagation).
+	 */
+	function getFrameworkContext(
+		importer: string | undefined,
+	): string | undefined {
+		if (!importer) return undefined;
+		const fwMatch = importer.match(FRAMEWORK_QUERY_RE);
+		if (fwMatch) return fwMatch[1];
+		const cleanPath = importer.split("?")[0];
+		return islandFrameworks.get(cleanPath);
+	}
+
+	/**
+	 * Check if a file is a "universal" component: a .tsx/.jsx file with
+	 * no `"use client"` directive and no `@jsxImportSource` pragma.
+	 */
+	function isUniversalComponent(absPath: string): boolean {
+		const cached = universalFileCache.get(absPath);
+		if (cached !== undefined) return cached !== null;
+		try {
+			const content = readFileSync(absPath, "utf-8");
+			const isUniversal =
+				!parseUseClientDirective(content).hasDirective &&
+				!matchAdapterByPragma(content, adapters);
+			universalFileCache.set(absPath, isUniversal ? { content } : null);
+			return isUniversal;
+		} catch {
+			universalFileCache.set(absPath, null);
+			return false;
+		}
 	}
 
 	function registerFileIslands(
@@ -538,7 +581,7 @@ export function atollic(options: AtollicOptions): Plugin[] {
 
 		// -- Virtual module: client entry ---------------------------------------
 
-		resolveId(id) {
+		async resolveId(id, importer, options) {
 			if (id === VIRTUAL_CLIENT_ID) return RESOLVED_VIRTUAL_CLIENT_ID;
 			if (id === VIRTUAL_PROD_ENTRY_ID) return RESOLVED_VIRTUAL_PROD_ENTRY_ID;
 			if (id === VIRTUAL_SERVER_BOOT_ID) return RESOLVED_VIRTUAL_SERVER_BOOT_ID;
@@ -552,6 +595,34 @@ export function atollic(options: AtollicOptions): Plugin[] {
 			if (id.endsWith(RAW_ISLAND_QUERY)) {
 				const realPath = id.slice(0, -RAW_ISLAND_QUERY.length);
 				return `${realPath}${RAW_ISLAND_QUERY}`;
+			}
+
+			// Universal component: propagate framework context from island imports.
+			// Applies during both SSR and client builds — during SSR, universal
+			// components imported from a ?raw-island (the real island code) must
+			// use the framework's JSX so renderToString produces correct output.
+			// Direct server-route imports have no framework context and naturally
+			// fall through to Atollic HTML JSX.
+			if (
+				importer &&
+				id.startsWith(".") &&
+				!id.includes(FRAMEWORK_QUERY_PREFIX)
+			) {
+				const fw = getFrameworkContext(importer);
+				if (fw) {
+					const resolved = await this.resolve(id, importer, {
+						skipSelf: true,
+					});
+					if (
+						resolved &&
+						!resolved.external &&
+						JSX_ONLY_RE.test(resolved.id) &&
+						!resolved.id.includes("node_modules") &&
+						isUniversalComponent(resolved.id.split("?")[0])
+					) {
+						return `${resolved.id}${FRAMEWORK_QUERY_PREFIX}${fw}`;
+					}
+				}
 			}
 		},
 
@@ -610,6 +681,28 @@ console.log(\`Listening on http://localhost:\${port}\`);
 					return stripUseClientDirective(content);
 				} catch {
 					// File read failed, skip
+				}
+				return;
+			}
+
+			// ?framework=X: compile a universal component for a specific framework
+			// by injecting the @jsxImportSource pragma so the right plugin picks it up.
+			const fwMatch = id.match(FRAMEWORK_QUERY_RE);
+			if (fwMatch) {
+				const fw = fwMatch[1];
+				const realPath = id.replace(FRAMEWORK_QUERY_RE, "");
+				const adapter = adapters.find((a) => a.name === fw);
+				if (!adapter) return;
+				try {
+					const cached = universalFileCache.get(realPath);
+					let content = cached?.content ?? readFileSync(realPath, "utf-8");
+					if (adapter.transformUniversal) {
+						content = adapter.transformUniversal(content);
+					}
+					const importSource = (adapter.jsxImportSources ?? [adapter.name])[0];
+					return `/** @jsxImportSource ${importSource} */\n${content}`;
+				} catch {
+					// File read failed
 				}
 				return;
 			}
@@ -762,6 +855,7 @@ console.log(\`Listening on http://localhost:\${port}\`);
 		handleHotUpdate({ file, server }) {
 			// Invalidate CSS cache when any file changes (CSS deps may shift)
 			cachedCssUrls = null;
+			universalFileCache.delete(file);
 
 			if (!file.endsWith(".ts") && !file.endsWith(".tsx")) return;
 
@@ -780,7 +874,12 @@ console.log(\`Listening on http://localhost:\${port}\`);
 			}
 
 			server.ws.send({ type: "custom", event: HMR_RELOAD_EVENT });
-			return []; // Suppress default client-side HMR.
+
+			// Universal components also have ?framework=X client variants that
+			// need framework HMR — let Vite's default HMR handle those.
+			if (isUniversalComponent(file)) return;
+
+			return []; // Pure server file — suppress default client-side HMR.
 		},
 	};
 
@@ -793,6 +892,7 @@ console.log(\`Listening on http://localhost:\${port}\`);
 		enforce: "pre",
 		async transform(code, id) {
 			if (!JSX_ONLY_RE.test(id)) return;
+			if (FRAMEWORK_QUERY_RE.test(id)) return;
 			if (matchAdapterByPragma(code, adapters)) return;
 			const result = await transformWithOxc(code, id, {
 				jsx: { runtime: "automatic", importSource: "atollic" },
