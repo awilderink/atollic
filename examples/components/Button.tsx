@@ -2,15 +2,14 @@
 // Compiled as Atollic HTML on the server, and as the importer's framework
 // (React / Solid) on the client — see ?framework= query in vite.ts.
 
-export default function Button(props: {
-	// biome-ignore lint/suspicious/noExplicitAny: children type varies by framework
-	children?: any;
+import type { UniversalFC } from "atollic";
+
+const Button: UniversalFC<{
 	class?: string;
 	onClick?: () => void;
 	type?: "button" | "submit" | "reset";
 	"data-testid"?: string;
-	// biome-ignore lint/suspicious/noExplicitAny: return type varies by compile context
-}): any {
+}> = (props) => {
 	return (
 		<button
 			type={props.type ?? "button"}
@@ -22,4 +21,6 @@ export default function Button(props: {
 			{props.children}
 		</button>
 	);
-}
+};
+
+export default Button;
