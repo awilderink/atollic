@@ -145,8 +145,9 @@ declare global {
 			[attr: `data-${string}`]: string | number | boolean | undefined;
 			[attr: `aria-${string}`]: string | number | boolean | undefined;
 
-			// Event handlers (as strings for server-rendered HTML)
-			[attr: `on${string}`]: string | undefined;
+			// Event handlers (strings for server HTML, functions for universal components)
+			// biome-ignore lint/suspicious/noExplicitAny: universal components pass framework-native handlers
+			[attr: `on${string}`]: string | ((...args: any[]) => any) | undefined;
 
 			// innerHTML support
 			innerHTML?: string;

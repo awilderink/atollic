@@ -2,6 +2,8 @@ import { Elysia } from "elysia";
 import { Head } from "../../src/head.js";
 import type { Children } from "../../src/html/types.js";
 import { atollic } from "../../src/servers/elysia.js";
+// Universal components (no "use client", no @jsxImportSource)
+import Button from "../components/Button.js";
 import ReactChildrenShowcase from "../components/ReactChildrenShowcase.js";
 import ReactContextIsland from "../components/ReactContextIsland.js";
 // React islands
@@ -13,6 +15,7 @@ import ReactIslandA, {
 import ReactNoPropIsland from "../components/ReactNoPropIsland.js";
 import ReactPropsShowcase from "../components/ReactPropsShowcase.js";
 import ReactTimer from "../components/ReactTimer.js";
+import ReactUniversalDemo from "../components/ReactUniversalDemo.js";
 // Solid islands
 import SolidCard from "../components/SolidCard.js";
 import SolidChildrenShowcase from "../components/SolidChildrenShowcase.js";
@@ -27,6 +30,7 @@ import SolidPropsShowcase from "../components/SolidPropsShowcase.js";
 import SolidThemeCards from "../components/SolidThemeCards.js";
 import SolidTimer from "../components/SolidTimer.js";
 import SolidToggle from "../components/SolidToggle.js";
+import SolidUniversalDemo from "../components/SolidUniversalDemo.js";
 
 // Client script (discovered by Vite plugin, runs only in browser)
 import "../components/ClientScript.js";
@@ -168,6 +172,11 @@ const routes: [string, string, string][] = [
 		"/async",
 		"Async",
 		"Async server components as standalone elements and island children",
+	],
+	[
+		"/universal",
+		"Universal",
+		"Shared component used on server, in React islands, and in Solid islands",
 	],
 ];
 
@@ -608,6 +617,40 @@ const app = new Elysia()
 				<AsyncContent />
 				<AsyncContent />
 				<AsyncContent />
+			</div>
+		</Layout>
+	))
+
+	// /universal ---------------------------------------------------------------
+	.get("/universal", () => (
+		<Layout title="Universal">
+			<Nav />
+			<h1>Universal Components</h1>
+			<p>
+				A single Button component (no directive, no pragma) used across server
+				HTML, a React island, and a Solid island.
+			</p>
+
+			<div data-testid="server-universal-section" style={section}>
+				<h2>Server-rendered Button</h2>
+				<p>
+					The Button renders as plain HTML on the server. The{" "}
+					<code>onClick</code> prop is dropped (functions are not valid HTML
+					attributes).
+				</p>
+				<Button data-testid="server-universal-btn" class="server-btn">
+					Server Button
+				</Button>
+			</div>
+
+			<div data-testid="react-universal-section" style={section}>
+				<h2>React island with shared Button</h2>
+				<ReactUniversalDemo />
+			</div>
+
+			<div data-testid="solid-universal-section" style={section}>
+				<h2>Solid island with shared Button</h2>
+				<SolidUniversalDemo />
 			</div>
 		</Layout>
 	));

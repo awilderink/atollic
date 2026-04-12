@@ -74,6 +74,18 @@ export interface FrameworkAdapter {
 	 *     : null`
 	 */
 	extractHtml?: string;
+
+	/**
+	 * Transform a universal component's source code for use within this
+	 * framework's client-side context. Called when a plain `.tsx` file
+	 * (no `"use client"` directive, no `@jsxImportSource` pragma) is
+	 * imported from a `"use client"` island belonging to this framework.
+	 *
+	 * Use this to map HTML-native attribute names to framework equivalents
+	 * (e.g. `class` to `className` for React). Frameworks whose JSX
+	 * accepts HTML attribute names (e.g. Solid) can omit this.
+	 */
+	transformUniversal?(code: string): string;
 }
 
 // ---------------------------------------------------------------------------
