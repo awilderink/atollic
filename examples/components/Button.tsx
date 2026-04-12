@@ -4,19 +4,12 @@
 
 import type { UniversalFC } from "atollic";
 
-const Button: UniversalFC<{
-	class?: string;
-	onClick?: () => void;
-	type?: "button" | "submit" | "reset";
-	"data-testid"?: string;
-}> = (props) => {
+const Button: UniversalFC<JSX.HtmlButtonTag> = (props) => {
 	return (
 		<button
 			type={props.type ?? "button"}
-			class={props.class}
-			onClick={props.onClick}
-			data-testid={props["data-testid"]}
 			style="padding: 0.5rem 1rem; border: 1px solid #aaa; border-radius: 4px; cursor: pointer; background: #f5f5f5"
+			{...props}
 		>
 			{props.children}
 		</button>
