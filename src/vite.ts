@@ -316,8 +316,8 @@ export function atollic(options: AtollicOptions): Plugin[] {
 
 	/** Maps island absPath to framework adapter name for context propagation. */
 	const islandFrameworks = new Map<string, string>();
-	/** Caches whether a file is a universal component (no directive, no pragma). */
-	const universalFileCache = new Map<string, boolean>();
+	/** Caches universal component classification and raw content. null = not universal or unreadable. */
+	const universalFileCache = new Map<string, { content: string } | null>();
 
 	/**
 	 * Resolve which adapter handles an island file. Order:
@@ -372,15 +372,16 @@ export function atollic(options: AtollicOptions): Plugin[] {
 	 */
 	function isUniversalComponent(absPath: string): boolean {
 		const cached = universalFileCache.get(absPath);
-		if (cached !== undefined) return cached;
+		if (cached !== undefined) return cached !== null;
 		try {
 			const content = readFileSync(absPath, "utf-8");
 			const isUniversal =
 				!parseUseClientDirective(content).hasDirective &&
 				!matchAdapterByPragma(content, adapters);
-			universalFileCache.set(absPath, isUniversal);
+			universalFileCache.set(absPath, isUniversal ? { content } : null);
 			return isUniversal;
 		} catch {
+			universalFileCache.set(absPath, null);
 			return false;
 		}
 	}
@@ -684,9 +685,8 @@ console.log(\`Listening on http://localhost:\${port}\`);
 				return;
 			}
 
-			// ?framework=X: universal component compiled for a specific framework.
-			// Inject @jsxImportSource pragma and apply optional prop mapping so the
-			// correct framework plugin picks it up.
+			// ?framework=X: compile a universal component for a specific framework
+			// by injecting the @jsxImportSource pragma so the right plugin picks it up.
 			const fwMatch = id.match(FRAMEWORK_QUERY_RE);
 			if (fwMatch) {
 				const fw = fwMatch[1];
@@ -694,7 +694,8 @@ console.log(\`Listening on http://localhost:\${port}\`);
 				const adapter = adapters.find((a) => a.name === fw);
 				if (!adapter) return;
 				try {
-					let content = readFileSync(realPath, "utf-8");
+					const cached = universalFileCache.get(realPath);
+					let content = cached?.content ?? readFileSync(realPath, "utf-8");
 					if (adapter.transformUniversal) {
 						content = adapter.transformUniversal(content);
 					}
@@ -866,10 +867,6 @@ console.log(\`Listening on http://localhost:\${port}\`);
 				// File read failed, treat as server file
 			}
 
-			// Universal components have ?framework=X variants that need framework
-			// HMR, not the server morph path. Let Vite's default HMR handle them.
-			if (isUniversalComponent(file)) return;
-
 			// Server-side file changed → tell client to refetch + morph.
 			const mods = server.moduleGraph.getModulesByFile(file);
 			if (mods) {
@@ -877,7 +874,12 @@ console.log(\`Listening on http://localhost:\${port}\`);
 			}
 
 			server.ws.send({ type: "custom", event: HMR_RELOAD_EVENT });
-			return []; // Suppress default client-side HMR.
+
+			// Universal components also have ?framework=X client variants that
+			// need framework HMR — let Vite's default HMR handle those.
+			if (isUniversalComponent(file)) return;
+
+			return []; // Pure server file — suppress default client-side HMR.
 		},
 	};
 

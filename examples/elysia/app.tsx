@@ -84,6 +84,7 @@ function Nav() {
 		["/dynamic", "Dynamic"],
 		["/scripts", "Scripts"],
 		["/async", "Async"],
+		["/universal", "Universal"],
 	];
 	return (
 		<nav style="margin-bottom: 2rem; display: flex; flex-wrap: wrap; gap: 0.5rem">
